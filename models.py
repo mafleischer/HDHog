@@ -21,11 +21,23 @@ class Catalogue:
     """This represents the walking of the directory tree.
     """
 
-    filter_checks = []
-
-    file_container = CatalogueFileContainer()
+    def __init__(self):
+        self.filter_checks = []
+        self.file_container = CatalogueFileContainer()
 
     def createCatalogue(self, start="/", hash_files=False):
+        """Walk the directory tree and put items into container.
+
+        So far this only goes over the files, grabs the info,
+        puts it into FileItem objects and puts those into the
+        file container.
+        Upon action it also deletes the selected items from the
+        catalogue.
+
+        Args:
+            start (str, optional): Start of the walk. Defaults to "/".
+            hash_files (bool, optional): Whether hash sum of files shall be computed. Defaults to False.
+        """
 
         for root, dirs, files in os.walk(start):
 
@@ -41,6 +53,11 @@ class Catalogue:
                     self.file_container.addItem(fi)
 
     def addFilterCheck(self, filter_check: FilterCheck):
+        """Register a check object.
+
+        Args:
+            filter_check (FilterCheck): Check object
+        """
 
         # check if a check of that kind was already added
         if self.filter_checks:
@@ -50,18 +67,29 @@ class Catalogue:
 
         filter_checks.append(filter_check)
 
-    def actionOnIndices(action: Action, indices: List[int]):
-        pass
+    def fileActionOnIndices(action: Action, indices: List[int]):
+        items = self.file_container.popItemsFromIndices(indices)
+        for item in items:
+            action.execute(item)
 
 
 class CatalogueItem(ABC):
+    """This is the ABC class for an item held in the catalogue
+    container.
+    """
+
     __slots__ = ["size", "dirpath", "name"]
 
-    def getFullPath(self):
+    def getFullPath(self) -> str:
         return os.path.join(self.dirpath, self.name)
 
-    def displayHRSize(self):
-        pass
+    def displayHRSize(self) -> str:
+        """From size in bytes compute K, M or G.
+
+        Returns:
+            str: human readable size
+        """
+        return hrsize
 
 
 class FileItem(CatalogueItem):
@@ -79,6 +107,10 @@ class FileItem(CatalogueItem):
 
 
 class FilterCheck(ABC):
+    """This is the ABC class for a filter check used
+    when walking the directory tree in the Catalogue.
+    """
+
     @abstractclassmethod
     def check(self, filepath: str):
         pass
@@ -98,18 +130,20 @@ class FilterCheckFileExt(FilterCheck):
 
 
 class CatalogueContainer(ABC):
+    """Holds CatalogueItems and provides sorting therof.
+    """
 
     container: SortedKeyList
 
     def addItem(self, item: CatalogueItem):
-        container.add(item)
+        self.container.add(item)
 
     def popItemsFromIndices(self, indices: List[int]) -> List[CatalogueItem]:
 
         items = []
 
         for ix in indices:
-            items.append(container.pop(ix))
+            items.append(self.container.pop(ix))
 
         return items
 
@@ -123,14 +157,15 @@ class CatalogueContainer(ABC):
 
 
 class CatalogueFileContainer(CatalogueContainer):
-    container = SortedKeyList(
-        key=lambda file_item: (
-            -file_item.size,
-            file_item.dirpath,
-            file_item.type,
-            file_item.name,
+    def __init__(self):
+        self.container = SortedKeyList(
+            key=lambda file_item: (
+                -file_item.size,
+                file_item.dirpath,
+                file_item.type,
+                file_item.name,
+            )
         )
-    )
 
 
 class Action(ABC):
@@ -147,6 +182,6 @@ class ActionDeleteFile(Action):
             logger.error("Error deleting file: File not found.")
 
 
-class ActionMoveFile(Action):
+class ActionMoveFileTo(Action):
     def execute(self, file_item, dest):
         pass
