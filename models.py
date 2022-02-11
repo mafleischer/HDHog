@@ -1,34 +1,36 @@
-from dataclasses import dataclass
-from queue import PriorityQueue
+from sortedcontainers import SortedKeyList
 from abc import ABC, abstractclassmethod
 from hashlib import sha256
 
 
-@dataclass(frozen=True, order=True)
-class File:
-    size: int
-    path: str
-    name: str
-    filetype: str
-    filehash: str
-
-
-class Search:
+class Catalogue:
 
     filter_checks = []
 
-    def searchLargestFiles(self):
+    def createCatalogue(self, start="/"):
         pass
-
-    def walkDir()
 
     def addFilterCheck(self, filter_check: FilterCheck):
         pass
 
 
+class CatalogueItem(ABC):
+    __slots__ = ["size", "dirpath", "name"]
+
+
+class FileItem(CatalogueItem):
+    __slots__ = ["type", "hash"]
+
+    def __init__(self, filepath: str, with_hash: bool):
+        pass
+
+    def setFileInfo(filepath: str, hash: bool):
+        pass
+
+
 class FilterCheck(ABC):
     @abstractclassmethod
-    def check(self, filepath: str, *args):
+    def check(self, filepath: str):
         pass
 
 
@@ -37,15 +39,42 @@ class FilterCheckFileExt(FilterCheck):
         pass
 
 
-class SearchResultsContainer:
+class CatalogueContainer(ABC):
 
-    container = []
+    container: SortedKeyList
 
-    def feedContent(self):
+    def addItem(self, item: CatalogueItem):
+        container.add(item)
+
+    def deleteContent(self, indices: list):
         pass
 
-    def deleteContent(self):
+    def viewContent(self):
         pass
 
-    def returnContent(self):
+
+class CatalogueFileContainer(CatalogueContainer):
+    container = SortedKeyList(
+        key=lambda file_item: (
+            file_item.size,
+            file_item.dirpath,
+            file_item.type,
+            file_item.name,
+        )
+    )
+
+
+class Action(ABC):
+    @abstractclassmethod
+    def execute(self):
+        pass
+
+
+class ActionDeleteFiles(Action):
+    def execute(self, paths):
+        pass
+
+
+class ActionMoveFiles(Action):
+    def execute(self, paths, dest):
         pass
