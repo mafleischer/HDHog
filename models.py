@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import logging
 
@@ -5,10 +6,10 @@ from sortedcontainers import SortedKeyList
 from abc import ABC, abstractclassmethod
 from hashlib import sha256
 
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Type
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 ch = logging.StreamHandler()
@@ -23,7 +24,7 @@ class Catalogue:
 
     def __init__(self):
         self.filter_checks = []
-        self.file_container = CatalogueFileContainer()
+        self.files = CatalogueFileContainer()
 
     def createCatalogue(self, start="/", hash_files=False):
         """Walk the directory tree and put items into container.
@@ -36,7 +37,8 @@ class Catalogue:
 
         Args:
             start (str, optional): Start of the walk. Defaults to "/".
-            hash_files (bool, optional): Whether hash sum of files shall be computed. Defaults to False.
+            hash_files (bool, optional): Whether hash sum of files
+            shall be computed. Defaults to False.
         """
 
         for root, dirs, files in os.walk(start):
@@ -46,11 +48,14 @@ class Catalogue:
 
                 for filter_check in self.filter_checks:
                     if not filter_check.check(filepath):
+                        logger.debug(
+                            f"Skipping {filepath} due to filter check {filter_check}."
+                        )
                         break
                 else:
                     fi = FileItem(filepath, hash_files=hash_files)
 
-                    self.file_container.addItem(fi)
+                    self.files.addItem(fi)
 
     def addFilterCheck(self, filter_check: FilterCheck):
         """Register a check object.
@@ -65,10 +70,10 @@ class Catalogue:
                 if type(filter_check) == type(registered_check):
                     del self.filter_checks[ix]
 
-        filter_checks.append(filter_check)
+        self.filter_checks.append(filter_check)
 
-    def fileActionOnIndices(action: Action, indices: List[int]):
-        items = self.file_container.popItemsFromIndices(indices)
+    def fileActionOnIndices(self, action: Action, indices: List[int]):
+        items = self.files.popItemsFromIndices(indices)
         for item in items:
             action.execute(item)
 
@@ -83,13 +88,8 @@ class CatalogueItem(ABC):
     def getFullPath(self) -> str:
         return os.path.join(self.dirpath, self.name)
 
-    def displayHRSize(self) -> str:
-        """From size in bytes compute K, M or G.
-
-        Returns:
-            str: human readable size
-        """
-        return hrsize
+    def getSize(self):
+        return self.size
 
 
 class FileItem(CatalogueItem):
@@ -98,8 +98,11 @@ class FileItem(CatalogueItem):
     def __init__(self, filepath: str, hash_files: bool):
         self.setFileInfo(filepath, hash_files)
 
-    def setFileInfo(filepath: str, hash: bool):
+    def setFileInfo(self, filepath: str, hash: bool):
         self.size = os.path.getsize(filepath)
+
+        logger.debug(f"File size for {filepath} is {self.size}")
+
         dirname, fname = os.path.split(filepath)
         self.dirpath = dirname
         self.name = fname
@@ -130,10 +133,25 @@ class FilterCheckFileExt(FilterCheck):
 
 
 class CatalogueContainer(ABC):
-    """Holds CatalogueItems and provides sorting therof.
+    """Holds CatalogueItems and provides sorting thereof.
     """
 
     container: SortedKeyList
+
+    def __len__(self):
+        return len(self.container)
+
+    def __contains__(self, path):
+        for item in self.container:
+            if item.getFullPath() == path:
+                return True
+        return False
+
+    def __iter__(self):
+        return iter(self.container)
+
+    def __getitem__(self, ix):
+        return self.container[ix]
 
     def addItem(self, item: CatalogueItem):
         self.container.add(item)
@@ -151,7 +169,7 @@ class CatalogueContainer(ABC):
         paths_size = []
 
         for item in self.container:
-            paths_size.append((item.getFullPath(), item.displayHRSize()))
+            paths_size.append((item.getFullPath(), item.getSize()))
 
         return paths_size
 
@@ -183,5 +201,8 @@ class ActionDeleteFile(Action):
 
 
 class ActionMoveFileTo(Action):
-    def execute(self, file_item, dest):
+    def __init__(self, dest):
+        self.dest = dest
+
+    def execute(self, file_item):
         pass
