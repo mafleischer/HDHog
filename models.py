@@ -72,7 +72,7 @@ class Catalogue:
 
         self.filter_checks.append(filter_check)
 
-    def fileActionOnIndices(self, action: Action, indices: List[int]):
+    def actionOnIndices(self, action: Action, indices: List[int]):
         items = self.files.popItemsFromIndices(indices)
         for item in items:
             action.execute(item)
