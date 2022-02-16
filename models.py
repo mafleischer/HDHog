@@ -3,10 +3,12 @@ import os
 import logging
 
 from sortedcontainers import SortedKeyList
+from anytree import NodeMixin
+
 from abc import ABC, abstractclassmethod
 from hashlib import sha256
 
-from typing import List, Dict, Tuple, Type
+from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -22,11 +24,14 @@ class Catalogue:
     """This represents the walking of the directory tree.
     """
 
-    def __init__(self):
+    def __init__(self, hash_files: bool):
         self.filter_checks = []
         self.files = CatalogueFileContainer()
+        self.dirs = CatalogueDirContainer()
+        self.rootdir = None
+        self.hash_files = hash_files
 
-    def createCatalogue(self, start="/", hash_files=False):
+    def createCatalogue(self, start="/"):
         """Walk the directory tree and put items into container.
 
         So far this only goes over the files, grabs the info,
@@ -41,21 +46,49 @@ class Catalogue:
             shall be computed. Defaults to False.
         """
 
-        for root, dirs, files in os.walk(start):
+        roots = {}
+
+        # do a rstrip, otherwise basename below will be empty
+        for parent, dirs, files in os.walk(start.rstrip("/"), topdown=False):
+
+            file_children = []
 
             for file in files:
-                filepath = os.path.join(root, file)
+                fi = FileItem(parent, file, hash_files=self.hash_files)
+                file_children.append(fi)
 
-                for filter_check in self.filter_checks:
-                    if not filter_check.check(filepath):
-                        logger.debug(
-                            f"Skipping {filepath} due to filter check {filter_check}."
-                        )
-                        break
-                else:
-                    fi = FileItem(filepath, hash_files=hash_files)
+                self.files.addItem(fi)
 
-                    self.files.addItem(fi)
+            parent_name = os.path.basename(parent)
+            parent_dirpath = os.path.dirname(parent)
+
+            logger.debug(
+                f"parent_dirpath: {parent_dirpath},  parent name: {parent_name}"
+            )
+
+            if not dirs:
+                parent_di = DirItem(parent_dirpath, parent_name, file_children, [])
+                roots[parent] = parent_di
+                self.dirs.addItem(parent_di)
+            else:
+                dir_children = []
+                for d in dirs:
+                    for root in roots:
+                        dirpath = os.path.join(parent, d)
+                        if root == dirpath:
+                            dir_children.append(roots[root])
+
+                for d in dirs:
+                    dirpath = os.path.join(parent, d)
+                    del roots[dirpath]
+
+                parent_di = DirItem(
+                    parent_dirpath, parent_name, file_children, dir_children
+                )
+                roots[parent] = parent_di
+                self.dirs.addItem(parent_di)
+
+        self.rootdir = list(roots.items())[0][1]
 
     def addFilterCheck(self, filter_check: FilterCheck):
         """Register a check object.
@@ -78,12 +111,17 @@ class Catalogue:
             action.execute(item)
 
 
-class CatalogueItem(ABC):
+class CatalogueItem(ABC, NodeMixin):
     """This is the ABC class for an item held in the catalogue
     container.
     """
 
     __slots__ = ["size", "dirpath", "name"]
+
+    def __init__(self, dirpath: str, name: str):
+        super().__init__()
+        self.dirpath = dirpath
+        self.name = name
 
     def getFullPath(self) -> str:
         return os.path.join(self.dirpath, self.name)
@@ -95,18 +133,45 @@ class CatalogueItem(ABC):
 class FileItem(CatalogueItem):
     __slots__ = ["type", "hash"]
 
-    def __init__(self, filepath: str, hash_files: bool):
-        self.setFileInfo(filepath, hash_files)
+    def __init__(self, dirpath: str, name: str, hash_files: bool):
+        super().__init__(dirpath, name)
+        self.setFileInfo(dirpath, name, hash_files)
 
-    def setFileInfo(self, filepath: str, hash: bool):
-        self.size = os.path.getsize(filepath)
+    def setFileInfo(self, dirpath: str, name: str, hash: bool):
+        self.size = os.path.getsize(os.path.join(dirpath, name))
 
-        logger.debug(f"File size for {filepath} is {self.size}")
+        logger.debug(f"File size for {os.path.join(dirpath, name)} is {self.size}")
 
-        dirname, fname = os.path.split(filepath)
-        self.dirpath = dirname
-        self.name = fname
-        self.type = os.path.splitext(filepath)[1]
+        self.type = os.path.splitext(self.name)[1]
+
+
+class DirItem(CatalogueItem):
+    __slots__ = ["files"]
+
+    def __init__(
+        self,
+        dirpath: str,
+        name: str,
+        file_children: List[FileItem],
+        dir_children: List[DirItem],
+    ):
+        super().__init__(dirpath, name)
+        self.files = CatalogueFileContainer()
+        self.children = file_children + dir_children
+
+        for file_child in file_children:
+            file_child.parent = self
+            self.files.addItem(file_child)
+
+        for dir_child in dir_children:
+            dir_child.parent = self
+
+        self.calcSetDirSize()
+
+    def calcSetDirSize(self):
+        sum_size = 0
+        sum_size += sum([child.getSize() for child in self.children])
+        self.size = sum_size
 
 
 class FilterCheck(ABC):
@@ -183,6 +248,13 @@ class CatalogueFileContainer(CatalogueContainer):
                 file_item.type,
                 file_item.name,
             )
+        )
+
+
+class CatalogueDirContainer(CatalogueContainer):
+    def __init__(self):
+        self.container = SortedKeyList(
+            key=lambda dir_item: (-dir_item.size, dir_item.dirpath, dir_item.name,)
         )
 
 
