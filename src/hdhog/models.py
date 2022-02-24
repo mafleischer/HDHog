@@ -35,7 +35,7 @@ class Catalogue:
         items.
     """
 
-    def __init__(self, hash_files: bool):
+    def __init__(self, hash_files = False):
         # self.filter_checks = []
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
