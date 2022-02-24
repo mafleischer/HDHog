@@ -15,7 +15,7 @@ from utils import (
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
-sys.path.append(parentdir)
+sys.path.append(os.path.join(parentdir, "src/hdhog/"))
 
 from models import Catalogue, ActionDelete
 
