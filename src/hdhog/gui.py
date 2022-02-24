@@ -9,15 +9,20 @@ from models import Catalogue
 
 class GUI:
     def __init__(self):
+
+        """ ### Data structures ### """
+        self.catalogue = Catalogue()
+
+        """ ### GUI elements ### """
+
         self.root = Tk()
-        # self.root.tk.call("encoding", "system", "unicode")
         self.root.title("Big File Finder - Find biggest files and delete or move them.")
 
         """ initial position and size """
-        w = 500
-        h = 400
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
+        w = int(sw * 0.66)
+        h = int(sh * 0.66)
         x = (sw // 2) - (w // 2)
         y = (sh // 2) - (h // 2)
 
@@ -127,6 +132,11 @@ class GUI:
             messagebox.showinfo(
                 title="Folder field empty", message="Choose a folder to list."
             )
+        else:
+            self.catalogue.createCatalogue(start=startdir)
+            print(list(self.catalogue.files))
+            self.lb_files.insert(END, *list(self.catalogue.files))
+            self.lb_dirs.insert(END, *list(self.catalogue.dirs))
 
     def deleteSelected(self):
         self.treeview.pack_forget()
