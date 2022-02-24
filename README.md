@@ -1,2 +1,2 @@
-# BigFileFinder
-Search biggest files on your hard disk, optionally based on additional criteria. Perform actions on them.
+# HDHog
+Browse a folder based on file and folder size so that you see the biggest first.
