@@ -134,7 +134,6 @@ class GUI:
             )
         else:
             self.catalogue.createCatalogue(start=startdir)
-            print(list(self.catalogue.files))
             self.lb_files.insert(END, *list(self.catalogue.files))
             self.lb_dirs.insert(END, *list(self.catalogue.dirs))
 
