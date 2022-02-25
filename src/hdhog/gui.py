@@ -3,6 +3,7 @@ from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
 from tkinter import W
 from tkinter import MULTIPLE
 from tkinter import filedialog, messagebox
+from math import log
 
 from models import Catalogue
 
@@ -87,20 +88,26 @@ class GUI:
 
         """ create files view """
 
-        self.lb_files = Listbox(tab_files, selectmode=MULTIPLE, height=350, width=200)
-        self.lb_files.pack(expand=1, fill="both")
-        self.lb_files.bind("<Double-Button-1>", self.dummy)
+        # self.lb_files = Listbox(tab_files, selectmode=MULTIPLE, height=350, width=200)
+        # self.lb_files.pack(expand=1, fill="both")
+        # self.lb_files.bind("<Double-Button-1>", self.dummy)
+
+        self.tv_files = ttk.Treeview(tab_files)
+        self.tv_files.pack(expand=1, fill="both")
 
         """ create directory view """
 
-        self.lb_dirs = Listbox(tab_dirs, selectmode=MULTIPLE, height=350, width=200)
-        self.lb_dirs.pack(expand=1, fill="both")
-        self.lb_dirs.bind("<Double-Button-1>", self.dummy)
+        # self.lb_dirs = Listbox(tab_dirs, selectmode=MULTIPLE, height=350, width=200)
+        # self.lb_dirs.pack(expand=1, fill="both")
+        # self.lb_dirs.bind("<Double-Button-1>", self.dummy)
+
+        self.tv_dirs = ttk.Treeview(tab_dirs)
+        self.tv_dirs.pack(expand=1, fill="both")
 
         """ create tree view """
 
-        self.treeview = ttk.Treeview(tab_tree)
-        self.treeview.pack(expand=1, fill="both")
+        self.tv_tree = ttk.Treeview(tab_tree)
+        self.tv_tree.pack(expand=1, fill="both")
 
         # adding data
         self.treeview.insert("", END, text="Administration", iid=0, open=False)
@@ -134,8 +141,6 @@ class GUI:
             )
         else:
             self.catalogue.createCatalogue(start=startdir)
-            self.lb_files.insert(END, *list(self.catalogue.files))
-            self.lb_dirs.insert(END, *list(self.catalogue.dirs))
 
     def deleteSelected(self):
         self.treeview.pack_forget()
@@ -143,3 +148,28 @@ class GUI:
 
     def dummy(self):
         self.treeview.pack_forget()
+
+    def humanReadableSize(self, size: int):
+        """Takes a size in bytes and returns a string with size suffix.
+
+        Takes a size in bytes (as returned from the OS FS functions) and
+        turns it into a size string in the manner of Unix' ls tool with
+        options -lh.
+
+        Args:
+            size (int): size in bytes
+
+        Returns:
+            str: size string in human readable form
+        """
+        size_suffixes = ["K", "M", "G", "T"]
+
+        loga = int(log(size, 1000))
+        if loga == 0:
+            return f"{size}"
+        elif loga == 1:
+            return f"{size // 1000}{size_suffixes[0]}"
+        else:
+            size_unit = size / (1000 ** loga)
+            return f"{size_unit:.1f}{size_suffixes[loga - 1]}"
+
