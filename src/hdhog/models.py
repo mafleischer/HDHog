@@ -35,7 +35,7 @@ class Catalogue:
         items.
     """
 
-    def __init__(self, hash_files = False):
+    def __init__(self, hash_files=False):
         # self.filter_checks = []
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
@@ -72,14 +72,20 @@ class Catalogue:
             start (str, optional): Start of the walk. Defaults to "/".
         """
 
+        self.files = CatalogueContainer()
+        self.dirs = CatalogueContainer()
         roots = {}
 
         # do a rstrip, otherwise basename below will be empty
-        for parent, dirs, files in os.walk(start.rstrip("/"), topdown=False):
+        for parent, dirs, files in os.walk(
+            start.rstrip("/"), topdown=False, followlinks=False
+        ):
 
             file_children = []
 
             for file in files:
+                if os.path.islink(os.path.join(parent, file)):
+                    continue
                 fi = FileItem(parent, file, hash_files=self.hash_files)
                 file_children.append(fi)
 
@@ -190,6 +196,8 @@ class Catalogue:
 class CatalogueItem(ABC, NodeMixin):
     """This is the ABC class for an item held in the catalogue
     container. It's an anytree node as well.
+
+    size = size in bytes
     """
 
     __slots__ = ["size", "dirpath", "name"]
@@ -207,9 +215,6 @@ class CatalogueItem(ABC, NodeMixin):
 
     def getFullPath(self) -> str:
         return os.path.join(self.dirpath, self.name)
-
-    def getSize(self):
-        return self.size
 
 
 class FileItem(CatalogueItem):
@@ -268,7 +273,7 @@ class DirItem(CatalogueItem):
         """Calculate size from all direct children and set it.
         """
         sum_size = 0
-        sum_size += sum([child.getSize() for child in self.children])
+        sum_size += sum([child.size for child in self.children])
         self.size = sum_size
 
 
