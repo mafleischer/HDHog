@@ -88,39 +88,59 @@ class GUI:
 
         """ create files view """
 
-        # self.lb_files = Listbox(tab_files, selectmode=MULTIPLE, height=350, width=200)
-        # self.lb_files.pack(expand=1, fill="both")
-        # self.lb_files.bind("<Double-Button-1>", self.dummy)
+        columns = ["name", "size", "dir"]
+        self.tv_files = ttk.Treeview(
+            tab_files, columns=columns, show="headings", selectmode="extended"
+        )
+        self.tv_files.column("size", width=80, minwidth=80, stretch=False)
+        self.tv_files.column("name", width=200, minwidth=200, stretch=False)
+        self.tv_files.column("dir", width=400, stretch=True)
 
-        self.tv_files = ttk.Treeview(tab_files)
+        self.tv_files.heading("name", text="File Name")
+        self.tv_files.heading("size", text="File Size")
+        self.tv_files.heading("dir", text="Parent Folder")
+
         self.tv_files.pack(expand=1, fill="both")
 
         """ create directory view """
 
-        # self.lb_dirs = Listbox(tab_dirs, selectmode=MULTIPLE, height=350, width=200)
-        # self.lb_dirs.pack(expand=1, fill="both")
-        # self.lb_dirs.bind("<Double-Button-1>", self.dummy)
+        columns = ["name", "size", "dir"]
+        self.tv_dirs = ttk.Treeview(
+            tab_dirs, columns=columns, show="headings", selectmode="extended"
+        )
 
-        self.tv_dirs = ttk.Treeview(tab_dirs)
+        self.tv_dirs.column("size", width=80, minwidth=80, stretch=False)
+        self.tv_dirs.column("name", width=200, minwidth=200, stretch=False)
+        self.tv_dirs.column("dir", width=400, stretch=True)
+
+        self.tv_dirs.heading("name", text="Folder Name")
+        self.tv_dirs.heading("size", text="Folder Size")
+        self.tv_dirs.heading("dir", text="Parent Folder")
+
         self.tv_dirs.pack(expand=1, fill="both")
 
         """ create tree view """
 
-        self.tv_tree = ttk.Treeview(tab_tree)
+        columns = ["name", "size"]
+        self.tv_tree = ttk.Treeview(
+            tab_tree, columns=columns, show="tree headings", selectmode="extended"
+        )
+        self.tv_tree.heading("name", text="Name")
+        self.tv_tree.heading("size", text="Size")
         self.tv_tree.pack(expand=1, fill="both")
 
         # adding data
-        self.treeview.insert("", END, text="Administration", iid=0, open=False)
-        self.treeview.insert("", END, text="Logistics", iid=1, open=False)
-        self.treeview.insert("", END, text="Sales", iid=2, open=False)
-        self.treeview.insert("", END, text="Finance", iid=3, open=False)
-        self.treeview.insert("", END, text="IT", iid=4, open=False)
+        self.tv_tree.insert("", END, text="Administration", iid=0, open=False)
+        self.tv_tree.insert("", END, text="Logistics", iid=1, open=False)
+        self.tv_tree.insert("", END, text="Sales", iid=2, open=False)
+        self.tv_tree.insert("", END, text="Finance", iid=3, open=False)
+        self.tv_tree.insert("", END, text="IT", iid=4, open=False)
 
         # adding children of first node
-        self.treeview.insert("", END, text="John Doe", iid=5, open=False)
-        self.treeview.insert("", END, text="Jane Doe", iid=6, open=False)
-        self.treeview.move(5, 0, 0)
-        self.treeview.move(6, 0, 1)
+        self.tv_tree.insert("", END, text="John Doe", iid=5, open=False)
+        self.tv_tree.insert("", END, text="Jane Doe", iid=6, open=False)
+        self.tv_tree.move(5, 0, 0)
+        self.tv_tree.move(6, 0, 1)
 
     def __del__(self):
         self.root.destroy()
@@ -130,7 +150,7 @@ class GUI:
 
     def chooseFolder(self):
         name = filedialog.askdirectory(parent=self.frame_right, mustexist=True)
-        self.startdir_entry.delete(0)
+        self.startdir_entry.delete(0, END)
         self.startdir_entry.insert(0, name)
 
     def listInfo(self):
@@ -141,6 +161,17 @@ class GUI:
             )
         else:
             self.catalogue.createCatalogue(start=startdir)
+            for item in self.catalogue.files:
+                name = item.name
+                size = self.humanReadableSize(item.size)
+                parent = item.dirpath
+                self.tv_files.insert("", END, values=(name, size, parent))
+
+            for item in self.catalogue.dirs:
+                name = item.name
+                size = self.humanReadableSize(item.size)
+                parent = item.dirpath
+                self.tv_dirs.insert("", END, values=(name, size, parent))
 
     def deleteSelected(self):
         self.treeview.pack_forget()
