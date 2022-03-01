@@ -83,7 +83,7 @@ class Catalogue:
 
             file_children = []
 
-            for file in files:
+            for file in sorted(files):
                 if os.path.islink(os.path.join(parent, file)):
                     continue
                 fi = FileItem(parent, file, hash_files=self.hash_files)
@@ -101,7 +101,7 @@ class Catalogue:
 
             logger.debug(f"file_children is {file_children}")
 
-            if not dirs:  # this is in "leaf directories"
+            if not sorted(dirs):  # this is in "leaf directories"
                 parent_di = DirItem(parent_dirpath, parent_name, file_children, [])
                 roots[parent] = parent_di
                 self.dirs.addItem(parent_di)
