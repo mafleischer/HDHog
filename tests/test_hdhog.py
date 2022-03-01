@@ -2,14 +2,12 @@ import os
 import sys
 import shutil
 import unittest
-from anytree import RenderTree
 from utils import (
-    createDirTree,
-    files_sizes,
+    createFSDirTree,
     renderTreeStr,
-    rendered_tree_true,
-    rendered_tree_delete_file,
-    rendered_tree_delete_dir,
+    render_init,
+    render_del_file,
+    render_del_dir,
 )
 
 
@@ -25,37 +23,44 @@ unittest.TestLoader.sortTestMethodsUsing = None
 class TestCatalogueFiles(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.dirtree = createDirTree()
+        cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.dirtree)
-        # pass
 
     def test0CreateCatalogue(self):
         catalogue = Catalogue(hash_files=False)
         catalogue.createCatalogue(start=self.dirtree)
 
-        # is the tree correct
-        # result_render = renderTreeStr(catalogue.rootdir)
-        # print(result_render)
-
-        # all files in catalogue?
-        self.assertEqual(len(files_sizes), len(catalogue.files))
+        # all files and dirs in catalogue?
+        self.assertEqual(len(self.files_sizes), len(catalogue.files))
+        self.assertEqual(len(self.dirs_sizes), len(catalogue.dirs))
 
         # sorting by size works?
-        files_sorted = sorted(files_sizes.items(), key=lambda tup: tup[1], reverse=True)
+        files_sorted = sorted(
+            self.files_sizes.items(), key=lambda tup: tup[1], reverse=True
+        )
 
         for ix, item in enumerate(catalogue.files):
             self.assertEqual(
                 files_sorted[ix][0], catalogue.files[ix].getFullPath(),
             )
 
+        dirs_sorted = sorted(
+            self.dirs_sizes.items(), key=lambda tup: tup[1], reverse=True
+        )
+
+        for ix, item in enumerate(catalogue.dirs):
+            self.assertEqual(
+                dirs_sorted[ix][0], catalogue.dirs[ix].getFullPath(),
+            )
+
         # is the tree correct
         result_render = renderTreeStr(catalogue.rootdir)
         print(result_render)
 
-        self.assertEqual(rendered_tree_true, result_render)
+        self.assertEqual(render_init, result_render)
 
     def test1DeleteFile(self):
         catalogue = Catalogue(hash_files=False)
@@ -63,7 +68,11 @@ class TestCatalogueFiles(unittest.TestCase):
 
         action = ActionDelete()
 
-        path = catalogue.files[0].getFullPath()
+        # delete biggest file
+        files_sorted = sorted(
+            self.files_sizes.items(), key=lambda tup: tup[1], reverse=True
+        )
+        path = files_sorted[0][0]
 
         catalogue.actionOnPaths(action, [path])
 
@@ -71,9 +80,8 @@ class TestCatalogueFiles(unittest.TestCase):
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.rootdir)
-        print(result_render)
 
-        self.assertEqual(rendered_tree_delete_file, result_render)
+        self.assertEqual(render_del_file, result_render)
 
     def test2DeleteDir(self):
         catalogue = Catalogue(hash_files=False)
@@ -81,7 +89,11 @@ class TestCatalogueFiles(unittest.TestCase):
 
         action = ActionDelete()
 
-        path = catalogue.dirs[3].getFullPath()
+        # delete smallest subdir
+        dirs_sorted = sorted(
+            self.dirs_sizes.items(), key=lambda tup: tup[1], reverse=True
+        )
+        path = dirs_sorted[-1][0]
 
         catalogue.actionOnPaths(action, [path])
 
@@ -89,22 +101,8 @@ class TestCatalogueFiles(unittest.TestCase):
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.rootdir)
-        print(result_render)
 
-        self.assertEqual(rendered_tree_delete_dir, result_render)
-
-    # def testCreateCatalogueFilter(self):
-    #     ext = "txt"
-    #     catalogue = Catalogue()
-    #     catalogue.addFilterCheck(FilterCheckFileExt([ext]))
-    #     catalogue.createCatalogue(start=self.dirtree)
-
-    #     files_sub = [
-    #         tup for tup in files if os.path.splitext(tup[0])[1].strip(".") != ext
-    #     ]
-
-    #     # all files in catalogue?
-    #     self.assertEqual(len(files_sub), len(catalogue.files))
+        self.assertEqual(render_del_dir, result_render)
 
 
 if __name__ == "__main__":

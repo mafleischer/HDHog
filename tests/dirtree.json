@@ -1,0 +1,60 @@
+{
+    "dirname": "dirtree",
+    "subtree": {
+        "dir_children": [
+            {
+                "dirname": "dir_0",
+                "subtree": {
+                    "dir_children": [],
+                    "file_children": {
+                        "file1.txt": 400000,
+                        "file2.txt": 100000
+                    }
+                }
+            },
+            {
+                "dirname": "dir_1",
+                "subtree": {
+                    "dir_children": [
+                        {
+                            "dirname": "dir_2",
+                            "subtree": {
+                                "dir_children": [
+                                    {
+                                        "dirname": "dir_3",
+                                        "subtree": {
+                                            "dir_children": [],
+                                            "file_children": {
+                                                "file4.iso": 40000000,
+                                                "file5.mp4": 10000000
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "dirname": "dir_4",
+                                        "subtree": {
+                                            "dir_children": [],
+                                            "file_children": {
+                                                "code100.py": 4000,
+                                                "code101.c": 1000
+                                            }
+                                        }
+                                    }
+                                ],
+                                "file_children": {
+                                    "file2.mp3": 40000,
+                                    "file3.odt": 10000
+                                }
+                            }
+                        }
+                    ],
+                    "file_children": {
+                        "file1.pdf": 1000000,
+                        "file2.mp3": 4000000
+                    }
+                }
+            }
+        ],
+        "file_children": {}
+    }
+}

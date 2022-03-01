@@ -1,79 +1,112 @@
 import os
 import sys
+import json
 from anytree import RenderTree
 from string import Template
+from typing import Tuple, Dict
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(os.path.join(parentdir, "src/hdhog/"))
 
-from models import CatalogueItem
+from models import CatalogueItem, DirItem
 
-parent = os.getcwd()
-dirtree_name = "dirtree"
-dirtree = os.path.join(parent, dirtree_name) + os.path.sep
+root_parent = os.getcwd()
 
-# a/ b/ c/ ...
-dir_names = [f"{subd}{os.path.sep}" for subd in ["a", "b", "c"]]
+render_init = """dirtree/    55555000    /home/linuser/data/code/HDHog/tests/dirtree/
+├── dir_1/    55055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
+│   ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
+│   ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
+│   └── dir_2/    50055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
+│       ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
+│       ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
+│       ├── dir_3/    50000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
+│       │   ├── file4.iso    40000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file4.iso
+│       │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
+│       └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
+│           ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
+│           └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
+└── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
+    ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
+    └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+"""
 
-# full dir paths
-dirs = [
-    f"{dirtree}{d}"
-    for d in [dir_names[0], dir_names[1], os.path.join(dir_names[1], dir_names[2])]
-]
+render_del_file = """dirtree/    15555000    /home/linuser/data/code/HDHog/tests/dirtree/
+├── dir_1/    15055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
+│   ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
+│   ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
+│   └── dir_2/    10055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
+│       ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
+│       ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
+│       ├── dir_3/    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
+│       │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
+│       └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
+│           ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
+│           └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
+└── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
+    ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
+    └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+"""
 
-files = [
-    f"{dirs[0]}file1.txt",
-    f"{dirs[0]}file2.txt",
-    f"{dirs[1]}file1.pdf",
-    f"{dirs[1]}file2.mp3",
-    f"{dirs[2]}file2.mp3",
-    f"{dirs[2]}file3.odt",
-]
+render_del_dir = """dirtree/    15550000    /home/linuser/data/code/HDHog/tests/dirtree/
+├── dir_1/    15050000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
+│   ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
+│   ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
+│   └── dir_2/    10050000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
+│       ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
+│       ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
+│       └── dir_3/    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
+│           └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
+└── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
+    ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
+    └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+"""
 
-# files and sizes
-files_sizes = dict(zip(files, [400000, 100000, 1000000, 4000000, 40000, 10000]))
-
-dirs_files = {
-    dirs[0]: [files[0], files[1]],
-    dirs[1]: [files[2], files[3]],
-    dirs[2]: [files[4], files[5]],
-}
-
-dir_sizes = {
-    dirtree_name: sum(files_sizes.values()),
-    dir_names[0]: 1800000,
-    dir_names[1]: 6770000,
-    dir_names[2]: 70000,
-}
-
-rendered_tree_true = """dirtree/   5550000  /home/linuser/data/code/HDHog/tests/dirtree/\n├── b/   5050000  /home/linuser/data/code/HDHog/tests/dirtree/b/\n│   ├── file2.mp3   4000000  /home/linuser/data/code/HDHog/tests/dirtree/b/file2.mp3\n│   ├── file1.pdf   1000000  /home/linuser/data/code/HDHog/tests/dirtree/b/file1.pdf\n│   └── c/   50000  /home/linuser/data/code/HDHog/tests/dirtree/b/c/\n│       ├── file2.mp3   40000  /home/linuser/data/code/HDHog/tests/dirtree/b/c/file2.mp3\n│       └── file3.odt   10000  /home/linuser/data/code/HDHog/tests/dirtree/b/c/file3.odt\n└── a/   500000  /home/linuser/data/code/HDHog/tests/dirtree/a/\n    ├── file1.txt   400000  /home/linuser/data/code/HDHog/tests/dirtree/a/file1.txt\n    └── file2.txt   100000  /home/linuser/data/code/HDHog/tests/dirtree/a/file2.txt\n"""
-rendered_tree_delete_file = """dirtree/   1550000  /home/linuser/data/code/HDHog/tests/dirtree/\n├── b/   1050000  /home/linuser/data/code/HDHog/tests/dirtree/b/\n│   ├── file1.pdf   1000000  /home/linuser/data/code/HDHog/tests/dirtree/b/file1.pdf\n│   └── c/   50000  /home/linuser/data/code/HDHog/tests/dirtree/b/c/\n│       ├── file2.mp3   40000  /home/linuser/data/code/HDHog/tests/dirtree/b/c/file2.mp3\n│       └── file3.odt   10000  /home/linuser/data/code/HDHog/tests/dirtree/b/c/file3.odt\n└── a/   500000  /home/linuser/data/code/HDHog/tests/dirtree/a/\n    ├── file1.txt   400000  /home/linuser/data/code/HDHog/tests/dirtree/a/file1.txt\n    └── file2.txt   100000  /home/linuser/data/code/HDHog/tests/dirtree/a/file2.txt\n"""
-rendered_tree_delete_dir = """dirtree/   1500000  /home/linuser/data/code/HDHog/tests/dirtree/\n├── b/   1000000  /home/linuser/data/code/HDHog/tests/dirtree/b/\n│   └── file1.pdf   1000000  /home/linuser/data/code/HDHog/tests/dirtree/b/file1.pdf\n└── a/   500000  /home/linuser/data/code/HDHog/tests/dirtree/a/\n    ├── file1.txt   400000  /home/linuser/data/code/HDHog/tests/dirtree/a/file1.txt\n    └── file2.txt   100000  /home/linuser/data/code/HDHog/tests/dirtree/a/file2.txt\n"""
-
-# render_top_str = f"{dirtree_name}   {sum(files_sizes.values())}  {dirtree}\n"
-# render_branch = Template("├── $name   $dirsize  $path\n")
-# render_branch_last = Template("├── $name   $dirsize  $path\n")
+with open("dirtree.json") as f:
+    dirtree_json = json.load(f)
 
 
-def createDirTree() -> str:
+def createFSDirTree(root_path=root_parent):
+    dirs_sizes = {}
+    files_sizes = {}
 
-    os.mkdir(f"{dirtree}")
+    def recurseCreateItems(parent_path: str, dir_dict: dict):
+        subtree = dir_dict["subtree"]
+        dir_children = subtree["dir_children"]
+        file_children = subtree["file_children"]
 
-    for d in dirs:
-        os.makedirs(d, exist_ok=True)
+        this_dir_path = os.path.join(parent_path, dir_dict["dirname"]) + os.path.sep
+        os.mkdir(this_dir_path)
+        dirs_sizes[this_dir_path] = 0
 
-    for file in files:
-        with open(file, "w") as f:
-            size = files_sizes[file]
-            f.write("X" * size)
+        for sub_dict in sorted(dir_children, key=lambda d: d["dirname"]):
 
-    return dirtree
+            recurseCreateItems(this_dir_path, sub_dict)
+
+            subd_path = os.path.join(this_dir_path, sub_dict["dirname"]) + os.path.sep
+            subd_size = dirs_sizes[subd_path]
+
+            dirs_sizes[this_dir_path] += subd_size
+
+        for fname, size in sorted(file_children.items()):
+            fpath = os.path.join(this_dir_path, fname)
+
+            with open(fpath, "w") as f:
+                f.write("X" * size)
+
+            files_sizes[fpath] = size
+            dirs_sizes[this_dir_path] += size
+
+    recurseCreateItems(root_parent, dirtree_json)
+
+    dirtree_path = os.path.join(root_parent, dirtree_json["dirname"]) + os.path.sep
+    return dirtree_path, dirs_sizes, files_sizes
 
 
 def renderTreeStr(root: CatalogueItem) -> str:
     treestr = ""
-    for pre, _, node in RenderTree(root):
-        treestr += f"{pre}{node.name}   {node.size}  {node.getFullPath()}\n"
-    return treestr
+    in_branch_space = " " * 4
 
+    for pre, _, node in RenderTree(root):
+        treestr += f"{pre}{node.name}{in_branch_space}{node.size}{in_branch_space}{node.getFullPath()}\n"
+    return treestr
