@@ -7,6 +7,9 @@ from math import log
 
 from models import Catalogue
 
+# class GUITree2TreeLink:
+#     def __init__(self, treeview):
+
 
 class GUI:
     def __init__(self):
@@ -47,20 +50,20 @@ class GUI:
             self.frame_right,
             text="Choose folder...",
             width=50,
-            command=self.chooseFolder,
+            command=self.btnChooseFolder,
         )
         self.button_choose_folder.pack(side=TOP, pady=10)
 
-        self.button_choose_folder = Button(
-            self.frame_right, text="List", width=50, command=self.listInfo,
+        self.button_list = Button(
+            self.frame_right, text="List", width=50, command=self.bntList,
         )
-        self.button_choose_folder.pack(side=TOP)
+        self.button_list.pack(side=TOP)
 
         self.button_delete_selected = Button(
             self.frame_right,
             text="Delete Selected",
             width=50,
-            command=self.deleteSelected,
+            command=self.btnDeleteSelected(),
         )
         self.button_delete_selected.pack(side=TOP, pady=50)
 
@@ -148,12 +151,12 @@ class GUI:
     def run(self):
         self.root.mainloop()
 
-    def chooseFolder(self):
+    def btnChooseFolder(self):
         name = filedialog.askdirectory(parent=self.frame_right, mustexist=True)
         self.startdir_entry.delete(0, END)
         self.startdir_entry.insert(0, name)
 
-    def listInfo(self):
+    def bntList(self):
         startdir = self.startdir_entry.get()
         if not startdir:
             messagebox.showinfo(
@@ -173,9 +176,8 @@ class GUI:
                 parent = item.dirpath
                 self.tv_dirs.insert("", END, values=(name, size, parent))
 
-    def deleteSelected(self):
-        self.treeview.pack_forget()
-        self.listbox.pack(side=BOTTOM)
+    def btnDeleteSelected(self):
+        pass
 
     def dummy(self):
         self.treeview.pack_forget()
@@ -198,9 +200,12 @@ class GUI:
         loga = int(log(size, 1000))
         if loga == 0:
             return f"{size}"
-        elif loga == 1:
-            return f"{size // 1000}{size_suffixes[0]}"
         else:
-            size_unit = size / (1000 ** loga)
-            return f"{size_unit:.1f}{size_suffixes[loga - 1]}"
+            amount_suffix_x = size // (1000 ** loga)
+
+            if len(str(amount_suffix_x)) > 1:
+                return f"{amount_suffix_x}{size_suffixes[loga - 1]}"
+            else:
+                size_point = size / (1000 ** loga)
+                return f"{size_point:.1f}{size_suffixes[loga - 1]}"
 
