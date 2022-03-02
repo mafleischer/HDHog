@@ -95,13 +95,7 @@ class Catalogue:
             parent_name = f"{os.path.basename(parent)}{os.path.sep}"
             parent_dirpath = os.path.dirname(parent)
 
-            logger.debug(
-                f"parent_dirpath: {parent_dirpath},  parent name: {parent_name}"
-            )
-
-            logger.debug(f"file_children is {file_children}")
-
-            if not sorted(dirs):  # this is in "leaf directories"
+            if not dirs:  # this is in "leaf directories"
                 parent_di = DirItem(parent_dirpath, parent_name, file_children, [])
                 roots[parent] = parent_di
                 self.dirs.addItem(parent_di)
@@ -116,8 +110,6 @@ class Catalogue:
                 for d in dirs:
                     dirpath = os.path.join(parent, d)
                     del roots[dirpath]
-
-                logger.debug(f"dir_children is {dir_children}")
 
                 parent_di = DirItem(
                     parent_dirpath, parent_name, file_children, dir_children
@@ -157,9 +149,6 @@ class Catalogue:
         """
         items = findall(self.rootdir, filter_=lambda item: item.getFullPath() in paths)
 
-        logger.debug(f"Found {items} items")
-        logger.debug(f"Found {len(items)} items")
-
         for item in items:
 
             logger.debug(f"Action on {item.getFullPath()}")
@@ -174,14 +163,12 @@ class Catalogue:
             if isinstance(item, DirItem):
                 self.dirs.removeItemByValue(item)
                 if parent:
-                    logger.debug(f"parent.dirs {parent.dirs.container}")
                     parent.dirs.removeItemByValue(item)
 
             # recalculate and set size of all parents up the tree
 
             if parent:
                 parent.dirs_files.removeItemByValue(item)
-                logger.debug(parent.children)
                 parent.children = [child for child in parent.children if child != item]
                 parent.calcSetDirSize()
 
@@ -226,9 +213,6 @@ class FileItem(CatalogueItem):
 
     def setFileInfo(self, dirpath: str, name: str, hash: bool):
         self.size = os.path.getsize(os.path.join(dirpath, name))
-
-        logger.debug(f"File size for {os.path.join(dirpath, name)} is {self.size}")
-
         self.type = os.path.splitext(self.name)[1]
 
 
@@ -254,8 +238,6 @@ class DirItem(CatalogueItem):
         self.dirs = CatalogueContainer()
         self.dirs_files = CatalogueContainer()
         self.children = file_children + dir_children
-
-        logger.debug(f"Created {self.children} from {file_children} and {dir_children}")
 
         for file_child in file_children:
             file_child.parent = self
@@ -313,8 +295,6 @@ class CatalogueContainer:
     #     return items
 
     def removeItemByValue(self, item: CatalogueItem):
-
-        logger.debug(f"remove {item}")
         self.container.remove(item)
 
     def getAllPathsAndSizes(self) -> List[Tuple[str, str]]:
