@@ -197,7 +197,11 @@ class GUI:
         """
         size_suffixes = ["K", "M", "G", "T"]
 
+        if size == 0:
+            return "0"
+
         loga = int(log(size, 1000))
+
         if loga == 0:
             return f"{size}"
         else:
@@ -208,4 +212,3 @@ class GUI:
             else:
                 size_point = size / (1000 ** loga)
                 return f"{size_point:.1f}{size_suffixes[loga - 1]}"
-
