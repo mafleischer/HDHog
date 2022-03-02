@@ -38,6 +38,14 @@ class TestCatalogue(unittest.TestCase):
         self.assertEqual(len(self.files_sizes), len(catalogue.files))
         self.assertEqual(len(self.dirs_sizes), len(catalogue.dirs))
 
+        # check IDs
+        f_ids = sorted([item.iid for item in catalogue.files])
+        d_ids = sorted([item.iid for item in catalogue.dirs])
+        f_ids_true = sorted([f"F{iid}" for iid in list(range(0, len(f_ids)))])
+        self.assertEqual(f_ids_true, f_ids)
+        d_ids_true = sorted([f"D{iid}" for iid in list(range(0, len(d_ids)))])
+        self.assertEqual(d_ids_true, d_ids)
+
         # sorting by size works?
         files_sorted = sorted(
             self.files_sizes.items(), key=lambda tup: tup[1], reverse=True
@@ -127,6 +135,7 @@ class TestGUI(unittest.TestCase):
         self.assertEqual(len(self.dirs_sizes), len_dirs)
 
     def testHumanReadableSize(self):
+        self.assertEqual(str(0), self.gui.humanReadableSize(0))
         self.assertEqual(str(200), self.gui.humanReadableSize(200))
         self.assertEqual("1.1K", self.gui.humanReadableSize(1100))
         self.assertEqual("5.5M", self.gui.humanReadableSize(5500000))

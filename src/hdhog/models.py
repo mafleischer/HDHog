@@ -75,28 +75,37 @@ class Catalogue:
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
         roots = {}
+        dir_iids = 0
+        file_iids = 0
 
         # do a rstrip, otherwise basename below will be empty
         for parent, dirs, files in os.walk(
             start.rstrip("/"), topdown=False, followlinks=False
         ):
 
+            # make directories always have a / or \ after name for easy distinction
+            parent_name = f"{os.path.basename(parent)}{os.path.sep}"
+            parent_dirpath = os.path.dirname(parent)
+
+            if os.path.islink(parent_dirpath):
+                continue
+
             file_children = []
 
             for file in sorted(files):
                 if os.path.islink(os.path.join(parent, file)):
                     continue
-                fi = FileItem(parent, file, hash_files=self.hash_files)
+                fi = FileItem(f"F{file_iids}", parent, file, hash_files=self.hash_files)
                 file_children.append(fi)
 
                 self.files.addItem(fi)
-
-            # make directories always have a / or \ after name for easy distinction
-            parent_name = f"{os.path.basename(parent)}{os.path.sep}"
-            parent_dirpath = os.path.dirname(parent)
+                file_iids += 1
 
             if not dirs:  # this is in "leaf directories"
-                parent_di = DirItem(parent_dirpath, parent_name, file_children, [])
+                d_id = f"D{dir_iids}"
+                parent_di = DirItem(
+                    d_id, parent_dirpath, parent_name, file_children, []
+                )
                 roots[parent] = parent_di
                 self.dirs.addItem(parent_di)
             else:
@@ -109,13 +118,19 @@ class Catalogue:
 
                 for d in dirs:
                     dirpath = os.path.join(parent, d)
+                    if os.path.islink(dirpath):
+                        continue
                     del roots[dirpath]
 
+                d_id = f"D{dir_iids}"
                 parent_di = DirItem(
-                    parent_dirpath, parent_name, file_children, dir_children
+                    d_id, parent_dirpath, parent_name, file_children, dir_children,
                 )
+
                 roots[parent] = parent_di
                 self.dirs.addItem(parent_di)
+
+            dir_iids += 1
 
         self.rootdir = list(roots.items())[0][1]
 
@@ -189,8 +204,9 @@ class CatalogueItem(ABC, NodeMixin):
 
     __slots__ = ["size", "dirpath", "name"]
 
-    def __init__(self, dirpath: str, name: str):
+    def __init__(self, iid: str, dirpath: str, name: str):
         super().__init__()
+        self.iid = iid
         self.dirpath = dirpath
         self.name = name
 
@@ -207,8 +223,8 @@ class CatalogueItem(ABC, NodeMixin):
 class FileItem(CatalogueItem):
     __slots__ = ["type", "hash"]
 
-    def __init__(self, dirpath: str, name: str, hash_files: bool):
-        super().__init__(dirpath, name)
+    def __init__(self, iid: str, dirpath: str, name: str, hash_files: bool):
+        super().__init__(iid, dirpath, name)
         self.setFileInfo(dirpath, name, hash_files)
 
     def setFileInfo(self, dirpath: str, name: str, hash: bool):
@@ -228,12 +244,13 @@ class DirItem(CatalogueItem):
 
     def __init__(
         self,
+        iid: str,
         dirpath: str,
         name: str,
         file_children: List[FileItem],
         dir_children: List[DirItem],
     ):
-        super().__init__(dirpath, name)
+        super().__init__(iid, dirpath, name)
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
         self.dirs_files = CatalogueContainer()
