@@ -7,7 +7,7 @@ from math import log
 
 from models import Catalogue
 
-# class GUITree2TreeLink:
+# class Tree2TreeView:
 #     def __init__(self, treeview):
 
 
@@ -63,7 +63,7 @@ class GUI:
             self.frame_right,
             text="Delete Selected",
             width=50,
-            command=self.btnDeleteSelected(),
+            command=self.btnDeleteSelected,
         )
         self.button_delete_selected.pack(side=TOP, pady=50)
 
@@ -165,24 +165,27 @@ class GUI:
         else:
             self.catalogue.createCatalogue(start=startdir)
             for item in self.catalogue.files:
+                iid = item.iid
                 name = item.name
                 size = self.humanReadableSize(item.size)
                 parent = item.dirpath
-                self.tv_files.insert("", END, values=(name, size, parent))
+                self.tv_files.insert("", END, iid=iid, values=(name, size, parent))
 
             for item in self.catalogue.dirs:
+                iid = item.iid
                 name = item.name
                 size = self.humanReadableSize(item.size)
                 parent = item.dirpath
-                self.tv_dirs.insert("", END, values=(name, size, parent))
+                self.tv_dirs.insert("", END, iid=iid, values=(name, size, parent))
 
     def btnDeleteSelected(self):
+        # self.tv_files.delete(self.tv_files.selection())
         pass
 
     def dummy(self):
         self.treeview.pack_forget()
 
-    def humanReadableSize(self, size: int):
+    def humanReadableSize(self, size: int) -> str:
         """Takes a size in bytes and returns a string with size suffix.
 
         Takes a size in bytes (as returned from the OS FS functions) and
