@@ -2,16 +2,13 @@ import os
 import sys
 import json
 from anytree import RenderTree
-from string import Template
 from typing import Tuple, Dict
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(os.path.join(parentdir, "src/hdhog/"))
 
-from models import CatalogueItem, DirItem
-
-root_parent = os.getcwd()
+from models import CatalogueItem
 
 render_init = """dirtree/    55555000    /home/linuser/data/code/HDHog/tests/dirtree/
 ├── dir_1/    55055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
@@ -65,8 +62,26 @@ render_del_dir = """dirtree/    15550000    /home/linuser/data/code/HDHog/tests/
 with open("dirtree.json") as f:
     dirtree_json = json.load(f)
 
+root_parent = os.getcwd()
 
-def createFSDirTree(root_path=root_parent):
+
+def createFSDirTree(
+    root_path=root_parent,
+) -> Tuple[str, Dict[str, int], Dict[str, int]]:
+    """Process the JSON for the directory tree recursively
+    and create files / directories.
+
+    Returns two mappings that are referenced in tests.
+
+    Args:
+        root_path (str, optional): directory under which the tree
+        will be created. Defaults to root_parent.
+
+    Returns:
+        tuple: path to the rootnode of the tree, mapping filepaths : sizes,
+        mapping directory paths : sizes
+    """
+
     dirs_sizes = {}
     files_sizes = {}
 
@@ -104,6 +119,14 @@ def createFSDirTree(root_path=root_parent):
 
 
 def renderTreeStr(root: CatalogueItem) -> str:
+    """Return a render string of anytree's RenderTree.
+
+    Args:
+        root (CatalogueItem): an anytree root node
+
+    Returns:
+        str: the render string
+    """
     treestr = ""
     in_branch_space = " " * 4
 

@@ -38,7 +38,7 @@ class TestCatalogue(unittest.TestCase):
         self.assertEqual(len(self.files_sizes), len(catalogue.files))
         self.assertEqual(len(self.dirs_sizes), len(catalogue.dirs))
 
-        # check IDs
+        # quick IDs check
         f_ids = sorted([item.iid for item in catalogue.files])
         d_ids = sorted([item.iid for item in catalogue.dirs])
         f_ids_true = sorted([f"F{iid}" for iid in list(range(0, len(f_ids)))])

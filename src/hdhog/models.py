@@ -51,10 +51,10 @@ class Catalogue:
 
         Algorithm:
 
-        1. Go over the files and put them in FileItems, insert into the
+        1. Iterate over the files and put them in FileItems, insert into the
         files container
 
-        2. Go over the directories.
+        2. Iterate over the directories.
             If it has no subdirectories create a DirItem for the parent
             directoy with just the files as children and store the
             DirItem as a root. Insert into directory container.
@@ -65,8 +65,13 @@ class Catalogue:
             roots anymore and are removed from the roots dict, as children as
             well, make it their parent and store it in the roots dict.
             Insert into directory container.
-        
-        Size calculation of the items is handled by the objects on creation.
+
+        The algorithm terminates with setting the topmost directory as the root
+        item / node self.rootdir
+                
+        Symlinks are skipped.
+
+        Size calculation of the items is handled by the item objects on creation.
 
         Args:
             start (str, optional): Start of the walk. Defaults to "/".
@@ -78,9 +83,22 @@ class Catalogue:
         dir_iids = 0
         file_iids = 0
 
+        def _raiseWalkError(oserror: OSError):
+            """By default os.walk ignores errors. With this
+            function passed as onerror= parameter exceptions are
+            raised.
+
+            Args:
+                oserror (OSError): instance
+
+            Raises:
+                oserror:
+            """
+            raise oserror
+
         # do a rstrip, otherwise basename below will be empty
         for parent, dirs, files in os.walk(
-            start.rstrip("/"), topdown=False, followlinks=False
+            start.rstrip("/"), topdown=False, followlinks=False, onerror=_raiseWalkError
         ):
 
             # make directories always have a / or \ after name for easy distinction
@@ -101,21 +119,22 @@ class Catalogue:
                 self.files.addItem(fi)
                 file_iids += 1
 
-            if not dirs:  # this is in "leaf directories"
+            # this is in "leaf directories"; no dir children
+            if not dirs:
                 d_id = f"D{dir_iids}"
                 parent_di = DirItem(
                     d_id, parent_dirpath, parent_name, file_children, []
                 )
                 roots[parent] = parent_di
                 self.dirs.addItem(parent_di)
+            # in upper directories subdirectories are roots at first
             else:
                 dir_children = []
                 for d in dirs:
-                    for root in roots:
-                        dirpath = os.path.join(parent, d)
-                        if root == dirpath:
-                            dir_children.append(roots[root])
+                    dirpath = os.path.join(parent, d)
+                    dir_children.append(roots[dirpath])
 
+                # the former roots have a parent now, so remove from them from roots
                 for d in dirs:
                     dirpath = os.path.join(parent, d)
                     if os.path.islink(dirpath):
@@ -196,7 +215,7 @@ class Catalogue:
 
 
 class CatalogueItem(ABC, NodeMixin):
-    """This is the ABC class for an item held in the catalogue
+    """This is the AB class for an item held in the catalogue
     container. It's an anytree node as well.
 
     size = size in bytes
@@ -236,8 +255,11 @@ class DirItem(CatalogueItem):
     """Holds children as well.
     It has three CatalogueContainers, two for holding and sorting files and
     directories separately, and one for holding and sorting both together.
-    
+
     The size is calculated on creation from all direct children.
+    With no subdirectories in it the size of a directory for now
+    is only the sum of the size of it's files. The additional
+    4K, or whatever the filesystem says, of any directory are not added.
     """
 
     __slots__ = ["files"]
@@ -303,24 +325,8 @@ class CatalogueContainer:
     def addItem(self, item: CatalogueItem):
         self.container.add(item)
 
-    # def popItemsFromIndices(self, indices: List[int]) -> List[CatalogueItem]:
-    #     items = []
-
-    #     for ix in indices:
-    #         items.append(self.container.pop(ix))
-
-    #     return items
-
     def removeItemByValue(self, item: CatalogueItem):
         self.container.remove(item)
-
-    def getAllPathsAndSizes(self) -> List[Tuple[str, str]]:
-        paths_size = []
-
-        for item in self.container:
-            paths_size.append((item.getFullPath(), item.getSize()))
-
-        return paths_size
 
 
 # class FilterCheck(ABC):
@@ -361,7 +367,7 @@ class ActionDelete(Action):
             os.remove(path)
         except FileNotFoundError:
             logger.error("Error deleting file: File not found.")
-            raise FileNotFoundError
+            raise
         except IsADirectoryError:
             shutil.rmtree(path)
 
@@ -372,4 +378,13 @@ class ActionMoveTo(Action):
 
     def execute(self, item: CatalogueItem):
         path = item.getFullPath()
-        shutil.move(path, self.dest_path)
+        try:
+            shutil.move(path, self.dest_path)
+        except NotADirectoryError:
+            logger.error(
+                f"Error moving {path}: Destination {self.dest_path} does not exist."
+            )
+            raise
+        except FileNotFoundError:
+            logger.error(f"Error moving {path}: Source {path} does not exist.")
+            raise
