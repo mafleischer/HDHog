@@ -105,14 +105,13 @@ class Catalogue:
             parent_name = f"{os.path.basename(parent)}{os.path.sep}"
             parent_dirpath = os.path.dirname(parent)
 
-            if os.path.islink(parent_dirpath):
-                continue
-
             file_children = []
 
             for file in sorted(files):
+
                 if os.path.islink(os.path.join(parent, file)):
                     continue
+
                 fi = FileItem(f"F{file_iids}", parent, file, hash_files=self.hash_files)
                 file_children.append(fi)
 
@@ -130,16 +129,21 @@ class Catalogue:
             # in upper directories subdirectories are roots at first
             else:
                 dir_children = []
+                symlink_dirs = []
                 for d in dirs:
                     dirpath = os.path.join(parent, d)
+
+                    if os.path.islink(dirpath):
+                        symlink_dirs.append(dirpath)
+                        continue
+
                     dir_children.append(roots[dirpath])
 
                 # the former roots have a parent now, so remove from them from roots
                 for d in dirs:
                     dirpath = os.path.join(parent, d)
-                    if os.path.islink(dirpath):
-                        continue
-                    del roots[dirpath]
+                    if dirpath not in symlink_dirs:
+                        del roots[dirpath]
 
                 d_id = f"D{dir_iids}"
                 parent_di = DirItem(
@@ -167,6 +171,9 @@ class Catalogue:
     #                 del self.filter_checks[ix]
 
     #     self.filter_checks.append(filter_check)
+
+    def deleteByIDs(selection: Tuple[str]):
+        items = findall(self.rootdir, filter_=lambda item: item.iid in selection)
 
     def actionOnPaths(self, fs_action: Action, paths: List[str]):
         """Executes a files system action on file or directory paths.
