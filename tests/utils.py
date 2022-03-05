@@ -8,7 +8,7 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(os.path.join(parentdir, "src/hdhog/"))
 
-from models import CatalogueItem
+from container import CatalogueItem
 
 render_init = """dirtree/    55555000    /home/linuser/data/code/HDHog/tests/dirtree/
 ├── dir_1/    55055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/

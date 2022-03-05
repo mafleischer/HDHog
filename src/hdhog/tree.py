@@ -1,10 +1,9 @@
+import os
 from anytree.search import findall, find_by_attr
 from abc import ABC, abstractclassmethod
+from typing import Tuple
 
-from typing import TYPE_CHECKING, Tuple
-
-if TYPE_CHECKING:
-    from catalogue import CatalogueItem
+from container import CatalogueItem, FileItem, DirItem
 
 
 class Tree(ABC):
@@ -30,10 +29,11 @@ class Tree(ABC):
 
 
 class DataTree(Tree):
-    def __init__(self, root_node: "CatalogueItem"):
+    def __init__(self, root_node: "CatalogueItem" = None):
         self.root_node = root_node
         self.file_iid = 0
         self.dir_iid = 0
+        self.mirror_trees = []
 
     def deleteByIDs(self, iids: Tuple[str]) -> "CatalogueItem":
         deleted = []
@@ -85,5 +85,127 @@ class DataTree(Tree):
             parent.calcSetDirSize()
             parent = parent.parent
 
-    def insertData(self, directory, file_children, dir_children):
-        pass
+    def treeFromFSBottomUp(self, start):
+        """Walk the directory tree and put items into containers and the tree.
+
+        This wraps os.walk() with topdown=False, so it builds the tree bottom up.
+        This is so the sizes of the directories can be calculated directly
+        when building the tree.
+
+        Algorithm:
+
+        1. Iterate over the files and put them in FileItems, insert into the
+        files container
+
+        2. Iterate over the directories.
+            If it has no subdirectories create a DirItem for the parent
+            directoy with just the files as children and store the
+            DirItem as a root. Insert into directory container.
+            This is in "leaf directories", so the algorithm starts with
+            these as the bottom-most roots.
+            
+            Else create a DirItem with the subdirectories, which are now not
+            roots anymore and are removed from the roots dict, as children as
+            well, make it their parent and store it in the roots dict.
+            Insert into directory container.
+
+        The algorithm terminates with setting the topmost directory as the root
+        item / node of self.tree
+                
+        Symlinks are skipped.
+
+        Size calculation of the items is handled by the item objects on creation.
+
+        Args:
+            start (str, optional): Start of the walk. Defaults to "/".
+        """
+
+        roots = {}
+        dir_iids = 0
+        file_iids = 0
+
+        def _raiseWalkError(oserror: OSError):
+            """By default os.walk ignores errors. With this
+            function passed as onerror= parameter exceptions are
+            raised.
+
+            Args:
+                oserror (OSError): instance
+
+            Raises:
+                oserror:
+            """
+            raise oserror
+
+        # do a rstrip, otherwise basename below will be empty
+        for parent, dirs, files in os.walk(
+            start.rstrip("/"), topdown=False, followlinks=False, onerror=_raiseWalkError
+        ):
+
+            # make directories always have a / or \ after name for easy distinction
+            parent_name = f"{os.path.basename(parent)}{os.path.sep}"
+            parent_dirpath = os.path.dirname(parent)
+
+            file_children = []
+
+            for file in sorted(files):
+
+                if os.path.islink(os.path.join(parent, file)):
+                    continue
+
+                fi = FileItem(f"F{self.file_iid}", parent, file)
+                fi.size = os.path.getsize(os.path.join(parent, file))
+
+                file_children.append(fi)
+                self.file_iid += 1
+
+            # this is in "leaf directories"; no dir children
+            if not dirs:
+                d_id = f"D{self.dir_iid}"
+                parent_di = DirItem(
+                    d_id, parent_dirpath, parent_name, file_children, []
+                )
+                roots[parent] = parent_di
+
+                yield (parent_di, file_children, [])
+
+                for mirror_tree in self.mirror_trees:
+                    mirror_tree.insertDirItem(parent_di)
+
+            # in upper directories subdirectories are roots at first
+            else:
+                dir_children = []
+                symlink_dirs = []
+                for d in dirs:
+                    dirpath = os.path.join(parent, d)
+
+                    if os.path.islink(dirpath):
+                        symlink_dirs.append(dirpath)
+                        continue
+
+                    dir_children.append(roots[dirpath])
+
+                # the former roots have a parent now, so remove from them from roots
+                for d in dirs:
+                    dirpath = os.path.join(parent, d)
+                    if dirpath not in symlink_dirs:
+                        del roots[dirpath]
+
+                d_iid = f"D{self.dir_iid}"
+                parent_di = DirItem(
+                    d_iid, parent_dirpath, parent_name, file_children, dir_children,
+                )
+
+                roots[parent] = parent_di
+
+                yield (parent_di, file_children, [])
+
+                for mirror_tree in self.mirror_trees:
+                    mirror_tree.insertDirItem(parent_di)
+
+            self.dir_iid += 1
+
+        self.root_node = list(roots.items())[0][1]
+
+    def registerMirrorTree(tree: Tree):
+        self.mirror_trees.append(tree)

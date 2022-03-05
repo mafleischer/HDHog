@@ -1,11 +1,11 @@
 from __future__ import annotations
 import os
 from sortedcontainers import SortedKeyList
-from anytree import NodeMixin
 from anytree.search import findall
 from abc import ABC, abstractclassmethod
 
 from tree import DataTree
+from container import CatalogueContainer, FileItem, DirItem
 from logger import logger
 
 
@@ -26,11 +26,11 @@ class Catalogue:
         # self.filter_checks = []
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
-        self.tree = None
+        self.tree = DataTree()
         self.mirror_trees = mirror_trees
         self.hash_files = hash_files
 
-    def createCatalogue(self, start="/"):
+    def createCatalogue(self, start):
         """Walk the directory tree and put items into containers and the tree.
 
         This wraps os.walk() with topdown=False, so it builds the tree bottom up.
@@ -67,94 +67,103 @@ class Catalogue:
 
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
-        roots = {}
-        dir_iids = 0
-        file_iids = 0
 
-        def _raiseWalkError(oserror: OSError):
-            """By default os.walk ignores errors. With this
-            function passed as onerror= parameter exceptions are
-            raised.
-
-            Args:
-                oserror (OSError): instance
-
-            Raises:
-                oserror:
-            """
-            raise oserror
-
-        # do a rstrip, otherwise basename below will be empty
-        for parent, dirs, files in os.walk(
-            start.rstrip("/"), topdown=False, followlinks=False, onerror=_raiseWalkError
+        for dir_item, file_items, dir_items in self.tree.treeFromFSBottomUp(
+            start=start
         ):
+            self.dirs.addItem(dir_item)
+            for item in file_items:
+                self.files.addItem(item)
+            for item in dir_items:
+                self.dirs.addItem(item)
 
-            # make directories always have a / or \ after name for easy distinction
-            parent_name = f"{os.path.basename(parent)}{os.path.sep}"
-            parent_dirpath = os.path.dirname(parent)
+        # roots = {}
+        # dir_iids = 0
+        # file_iids = 0
 
-            file_children = []
+        # def _raiseWalkError(oserror: OSError):
+        #     """By default os.walk ignores errors. With this
+        #     function passed as onerror= parameter exceptions are
+        #     raised.
 
-            for file in sorted(files):
+        #     Args:
+        #         oserror (OSError): instance
 
-                if os.path.islink(os.path.join(parent, file)):
-                    continue
+        #     Raises:
+        #         oserror:
+        #     """
+        #     raise oserror
 
-                fi = FileItem(f"F{file_iids}", parent, file, hash_files=self.hash_files)
-                file_children.append(fi)
+        # # do a rstrip, otherwise basename below will be empty
+        # for parent, dirs, files in os.walk(
+        #     start.rstrip("/"), topdown=False, followlinks=False, onerror=_raiseWalkError
+        # ):
 
-                self.files.addItem(fi)
-                file_iids += 1
+        #     # make directories always have a / or \ after name for easy distinction
+        #     parent_name = f"{os.path.basename(parent)}{os.path.sep}"
+        #     parent_dirpath = os.path.dirname(parent)
 
-            # this is in "leaf directories"; no dir children
-            if not dirs:
-                d_id = f"D{dir_iids}"
-                parent_di = DirItem(
-                    d_id, parent_dirpath, parent_name, file_children, []
-                )
-                roots[parent] = parent_di
-                self.dirs.addItem(parent_di)
+        #     file_children = []
 
-                for mirror_tree in self.mirror_trees:
-                    mirror_tree.insertDirItem(parent_di)
+        #     for file in sorted(files):
 
-            # in upper directories subdirectories are roots at first
-            else:
-                dir_children = []
-                symlink_dirs = []
-                for d in dirs:
-                    dirpath = os.path.join(parent, d)
+        #         if os.path.islink(os.path.join(parent, file)):
+        #             continue
 
-                    if os.path.islink(dirpath):
-                        symlink_dirs.append(dirpath)
-                        continue
+        #         fi = FileItem(f"F{file_iids}", parent, file, hash_files=self.hash_files)
+        #         fi.size = os.path.getsize(os.path.join(parent, file))
 
-                    dir_children.append(roots[dirpath])
+        #         file_children.append(fi)
 
-                # the former roots have a parent now, so remove from them from roots
-                for d in dirs:
-                    dirpath = os.path.join(parent, d)
-                    if dirpath not in symlink_dirs:
-                        del roots[dirpath]
+        #         self.files.addItem(fi)
+        #         file_iids += 1
 
-                d_iid = f"D{dir_iids}"
-                parent_di = DirItem(
-                    d_iid, parent_dirpath, parent_name, file_children, dir_children,
-                )
+        #     # this is in "leaf directories"; no dir children
+        #     if not dirs:
+        #         d_id = f"D{dir_iids}"
+        #         parent_di = DirItem(
+        #             d_id, parent_dirpath, parent_name, file_children, []
+        #         )
+        #         roots[parent] = parent_di
+        #         self.dirs.addItem(parent_di)
 
-                roots[parent] = parent_di
-                self.dirs.addItem(parent_di)
+        #         for mirror_tree in self.mirror_trees:
+        #             mirror_tree.insertDirItem(parent_di)
 
-                for mirror_tree in self.mirror_trees:
-                    mirror_tree.insertDirItem(parent_di)
+        #     # in upper directories subdirectories are roots at first
+        #     else:
+        #         dir_children = []
+        #         symlink_dirs = []
+        #         for d in dirs:
+        #             dirpath = os.path.join(parent, d)
 
-            dir_iids += 1
+        #             if os.path.islink(dirpath):
+        #                 symlink_dirs.append(dirpath)
+        #                 continue
 
-        root_node = list(roots.items())[0][1]
-        self.tree = DataTree(root_node)
+        #             dir_children.append(roots[dirpath])
 
-        # for mirror_tree in self.mirror_trees:
-        # mirror_tree.insertDirItem(root_node)
+        #         # the former roots have a parent now, so remove from them from roots
+        #         for d in dirs:
+        #             dirpath = os.path.join(parent, d)
+        #             if dirpath not in symlink_dirs:
+        #                 del roots[dirpath]
+
+        #         d_iid = f"D{dir_iids}"
+        #         parent_di = DirItem(
+        #             d_iid, parent_dirpath, parent_name, file_children, dir_children,
+        #         )
+
+        #         roots[parent] = parent_di
+        #         self.dirs.addItem(parent_di)
+
+        #         for mirror_tree in self.mirror_trees:
+        #             mirror_tree.insertDirItem(parent_di)
+
+        #     dir_iids += 1
+
+        # root_node = list(roots.items())[0][1]
+        # self.tree = DataTree(root_node)
 
     # def addFilterCheck(self, filter_check: FilterCheck):
     #     """Register a check object.
@@ -171,11 +180,8 @@ class Catalogue:
 
     #     self.filter_checks.append(filter_check)
 
-    def registerMirrorTree(self, tree: Tree):
-        self.mirror_trees.append(tree)
-
-    def deleteByIDs(selection: Tuple[str]):
-        self.tree.deleteByIDs(selection)
+    # def deleteByIDs(selection: Tuple[str]):
+    #     self.tree.deleteByIDs(selection)
 
     def actionOnPaths(self, fs_action: Action, paths: List[str]):
         """Executes a files system action on file or directory paths.
@@ -223,128 +229,6 @@ class Catalogue:
                     parent = parent.parent
 
             fs_action.execute(item)
-
-
-class CatalogueContainer:
-    """Holds CatalogueItems (actual objects) and provides sorting thereof.
-    """
-
-    def __init__(self):
-        self.container = SortedKeyList(
-            key=lambda item: (-item.size, item.dirpath, item.name,)
-        )
-
-    def __len__(self):
-        return len(self.container)
-
-    def __bool__(self):
-        if self.container:
-            return True
-        else:
-            return False
-
-    def __contains__(self, path):
-        for item in self.container:
-            if item.getFullPath() == path:
-                return True
-        return False
-
-    def __iter__(self):
-        return iter(self.container)
-
-    def __getitem__(self, ix):
-        return self.container[ix]
-
-    def addItem(self, item: CatalogueItem):
-        self.container.add(item)
-
-    def removeItemByValue(self, item: CatalogueItem):
-        self.container.remove(item)
-
-
-class CatalogueItem(ABC, NodeMixin):
-    """This is the AB class for an item held in the catalogue
-    container. It's an anytree node as well.
-
-    size = size in bytes
-    """
-
-    __slots__ = ["size", "dirpath", "name"]
-
-    def __init__(self, iid: str, dirpath: str, name: str):
-        super().__init__()
-        self.iid = iid
-        self.dirpath = dirpath
-        self.name = name
-
-    def __str__(self):
-        return self.getFullPath()
-
-    def __repr__(self):
-        return self.getFullPath()
-
-    def getFullPath(self) -> str:
-        return os.path.join(self.dirpath, self.name)
-
-
-class FileItem(CatalogueItem):
-    __slots__ = ["type", "hash"]
-
-    def __init__(self, iid: str, dirpath: str, name: str, hash_files: bool):
-        super().__init__(iid, dirpath, name)
-        self.setFileInfo(dirpath, name, hash_files)
-        # self.children = []
-
-    def setFileInfo(self, dirpath: str, name: str, hash: bool):
-        self.size = os.path.getsize(os.path.join(dirpath, name))
-        self.type = os.path.splitext(self.name)[1]
-
-
-class DirItem(CatalogueItem):
-    """Holds children as well.
-    It has three CatalogueContainers, two for holding and sorting files and
-    directories separately, and one for holding and sorting both together.
-
-    The size is calculated on creation from all direct children.
-    With no subdirectories in it the size of a directory for now
-    is only the sum of the size of it's files. The additional
-    4K, or whatever the filesystem says, of any directory are not added.
-    """
-
-    __slots__ = ["files", "dirs", "dirs_files", "children"]
-
-    def __init__(
-        self,
-        iid: str,
-        dirpath: str,
-        name: str,
-        file_children: List[FileItem],
-        dir_children: List[DirItem],
-    ):
-        super().__init__(iid, dirpath, name)
-        self.files = CatalogueContainer()
-        self.dirs = CatalogueContainer()
-        self.dirs_files = CatalogueContainer()
-        self.children = file_children + dir_children
-
-        for file_child in file_children:
-            file_child.parent = self
-            self.files.addItem(file_child)
-            self.dirs_files.addItem(file_child)
-
-        for dir_child in dir_children:
-            dir_child.parent = self
-            self.dirs.addItem(dir_child)
-            self.dirs_files.addItem(dir_child)
-
-        self.calcSetDirSize()
-
-    def calcSetDirSize(self):
-        """Calculate size from all direct children and set it.
-        """
-        sum_size = 0
-        sum_size += sum([child.size for child in self.children])
-        self.size = sum_size
 
 
 # class FilterCheck(ABC):

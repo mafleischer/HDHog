@@ -2,7 +2,7 @@ import shutil
 import os
 from abc import ABC, abstractclassmethod
 
-from catalogue import CatalogueItem
+from container import CatalogueItem
 from logger import logger
 
 
