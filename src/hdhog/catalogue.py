@@ -1,30 +1,17 @@
 from __future__ import annotations
 import os
-import shutil
-import logging
-
 from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
 from anytree.search import findall
-
 from abc import ABC, abstractclassmethod
-from hashlib import sha256
 
-from typing import List, Tuple
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-ch = logging.StreamHandler()
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
+from tree import DataTree
+from logger import logger
 
 
 class Catalogue:
-    """This represents the walking of the directory tree as well as actions
-    taken on catalogue items, i.e. files and directories.
+    """This represents the walking of the directory tree and holding the resulting
+    information, as well as actions taken on catalogue items, i.e. files and directories.
     This class holds three central structures / elements:
         1. A CatalogueContainer for files, which is just for file-based sorting
         2. A CatalogueContainer for directories, which is just for
@@ -35,11 +22,12 @@ class Catalogue:
         items.
     """
 
-    def __init__(self, hash_files=False):
+    def __init__(self, mirror_trees=[], hash_files=False):
         # self.filter_checks = []
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
-        self.rootdir = None
+        self.tree = None
+        self.mirror_trees = mirror_trees
         self.hash_files = hash_files
 
     def createCatalogue(self, start="/"):
@@ -67,7 +55,7 @@ class Catalogue:
             Insert into directory container.
 
         The algorithm terminates with setting the topmost directory as the root
-        item / node self.rootdir
+        item / node of self.tree
                 
         Symlinks are skipped.
 
@@ -126,6 +114,10 @@ class Catalogue:
                 )
                 roots[parent] = parent_di
                 self.dirs.addItem(parent_di)
+
+                for mirror_tree in self.mirror_trees:
+                    mirror_tree.insertDirItem(parent_di)
+
             # in upper directories subdirectories are roots at first
             else:
                 dir_children = []
@@ -145,17 +137,24 @@ class Catalogue:
                     if dirpath not in symlink_dirs:
                         del roots[dirpath]
 
-                d_id = f"D{dir_iids}"
+                d_iid = f"D{dir_iids}"
                 parent_di = DirItem(
-                    d_id, parent_dirpath, parent_name, file_children, dir_children,
+                    d_iid, parent_dirpath, parent_name, file_children, dir_children,
                 )
 
                 roots[parent] = parent_di
                 self.dirs.addItem(parent_di)
 
+                for mirror_tree in self.mirror_trees:
+                    mirror_tree.insertDirItem(parent_di)
+
             dir_iids += 1
 
-        self.rootdir = list(roots.items())[0][1]
+        root_node = list(roots.items())[0][1]
+        self.tree = DataTree(root_node)
+
+        # for mirror_tree in self.mirror_trees:
+        # mirror_tree.insertDirItem(root_node)
 
     # def addFilterCheck(self, filter_check: FilterCheck):
     #     """Register a check object.
@@ -172,8 +171,11 @@ class Catalogue:
 
     #     self.filter_checks.append(filter_check)
 
+    def registerMirrorTree(self, tree: Tree):
+        self.mirror_trees.append(tree)
+
     def deleteByIDs(selection: Tuple[str]):
-        items = findall(self.rootdir, filter_=lambda item: item.iid in selection)
+        self.tree.deleteByIDs(selection)
 
     def actionOnPaths(self, fs_action: Action, paths: List[str]):
         """Executes a files system action on file or directory paths.
@@ -188,7 +190,9 @@ class Catalogue:
             fs_action (Action): Action object
             paths (List[str]): full paths to files or dirs
         """
-        items = findall(self.rootdir, filter_=lambda item: item.getFullPath() in paths)
+        items = findall(
+            self.tree.root_node, filter_=lambda item: item.getFullPath() in paths
+        )
 
         for item in items:
 
@@ -219,6 +223,43 @@ class Catalogue:
                     parent = parent.parent
 
             fs_action.execute(item)
+
+
+class CatalogueContainer:
+    """Holds CatalogueItems (actual objects) and provides sorting thereof.
+    """
+
+    def __init__(self):
+        self.container = SortedKeyList(
+            key=lambda item: (-item.size, item.dirpath, item.name,)
+        )
+
+    def __len__(self):
+        return len(self.container)
+
+    def __bool__(self):
+        if self.container:
+            return True
+        else:
+            return False
+
+    def __contains__(self, path):
+        for item in self.container:
+            if item.getFullPath() == path:
+                return True
+        return False
+
+    def __iter__(self):
+        return iter(self.container)
+
+    def __getitem__(self, ix):
+        return self.container[ix]
+
+    def addItem(self, item: CatalogueItem):
+        self.container.add(item)
+
+    def removeItemByValue(self, item: CatalogueItem):
+        self.container.remove(item)
 
 
 class CatalogueItem(ABC, NodeMixin):
@@ -252,6 +293,7 @@ class FileItem(CatalogueItem):
     def __init__(self, iid: str, dirpath: str, name: str, hash_files: bool):
         super().__init__(iid, dirpath, name)
         self.setFileInfo(dirpath, name, hash_files)
+        # self.children = []
 
     def setFileInfo(self, dirpath: str, name: str, hash: bool):
         self.size = os.path.getsize(os.path.join(dirpath, name))
@@ -269,7 +311,7 @@ class DirItem(CatalogueItem):
     4K, or whatever the filesystem says, of any directory are not added.
     """
 
-    __slots__ = ["files"]
+    __slots__ = ["files", "dirs", "dirs_files", "children"]
 
     def __init__(
         self,
@@ -305,37 +347,6 @@ class DirItem(CatalogueItem):
         self.size = sum_size
 
 
-class CatalogueContainer:
-    """Holds CatalogueItems (actual objects) and provides sorting thereof.
-    """
-
-    def __init__(self):
-        self.container = SortedKeyList(
-            key=lambda item: (-item.size, item.dirpath, item.name,)
-        )
-
-    def __len__(self):
-        return len(self.container)
-
-    def __contains__(self, path):
-        for item in self.container:
-            if item.getFullPath() == path:
-                return True
-        return False
-
-    def __iter__(self):
-        return iter(self.container)
-
-    def __getitem__(self, ix):
-        return self.container[ix]
-
-    def addItem(self, item: CatalogueItem):
-        self.container.add(item)
-
-    def removeItemByValue(self, item: CatalogueItem):
-        self.container.remove(item)
-
-
 # class FilterCheck(ABC):
 #     """This is the ABC class for a filter check used
 #     when walking the directory tree in the Catalogue.
@@ -357,41 +368,3 @@ class CatalogueContainer:
 #             return False
 #         else:
 #             return True
-
-
-class Action(ABC):
-    """Base class for file system actions"""
-
-    @abstractclassmethod
-    def execute(self, catalogue_item: CatalogueItem):
-        pass
-
-
-class ActionDelete(Action):
-    def execute(self, item: CatalogueItem):
-        path = item.getFullPath()
-        try:
-            os.remove(path)
-        except FileNotFoundError:
-            logger.error("Error deleting file: File not found.")
-            raise
-        except IsADirectoryError:
-            shutil.rmtree(path)
-
-
-class ActionMoveTo(Action):
-    def __init__(self, dest_path: str):
-        self.dest_path = dest_path
-
-    def execute(self, item: CatalogueItem):
-        path = item.getFullPath()
-        try:
-            shutil.move(path, self.dest_path)
-        except NotADirectoryError:
-            logger.error(
-                f"Error moving {path}: Destination {self.dest_path} does not exist."
-            )
-            raise
-        except FileNotFoundError:
-            logger.error(f"Error moving {path}: Source {path} does not exist.")
-            raise

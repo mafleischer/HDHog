@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import unittest
+
 from utils import (
     createFSDirTree,
     renderTreeStr,
@@ -15,8 +16,8 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(os.path.join(parentdir, "src/hdhog/"))
 
-from models import Catalogue, ActionDelete
-from gui import GUI
+from catalogue import Catalogue
+from fsaction import FSActionDelete
 
 unittest.TestLoader.sortTestMethodsUsing = None
 
@@ -66,7 +67,7 @@ class TestCatalogue(unittest.TestCase):
             )
 
         # is the tree correct
-        result_render = renderTreeStr(catalogue.rootdir)
+        result_render = renderTreeStr(catalogue.tree.root_node)
         print(result_render)
 
         self.assertEqual(render_init, result_render)
@@ -75,7 +76,7 @@ class TestCatalogue(unittest.TestCase):
         catalogue = Catalogue(hash_files=False)
         catalogue.createCatalogue(start=self.dirtree)
 
-        action = ActionDelete()
+        fs_action = FSActionDelete()
 
         # delete biggest file
         files_sorted = sorted(
@@ -83,12 +84,12 @@ class TestCatalogue(unittest.TestCase):
         )
         path = files_sorted[0][0]
 
-        catalogue.actionOnPaths(action, [path])
+        catalogue.actionOnPaths(fs_action, [path])
 
         self.assertFalse(os.path.isfile(path))
 
         # is the tree correct
-        result_render = renderTreeStr(catalogue.rootdir)
+        result_render = renderTreeStr(catalogue.tree.root_node)
 
         self.assertEqual(render_del_file, result_render)
 
@@ -96,7 +97,7 @@ class TestCatalogue(unittest.TestCase):
         catalogue = Catalogue(hash_files=False)
         catalogue.createCatalogue(start=self.dirtree)
 
-        action = ActionDelete()
+        fs_action = FSActionDelete()
 
         # delete smallest subdir
         dirs_sorted = sorted(
@@ -104,43 +105,14 @@ class TestCatalogue(unittest.TestCase):
         )
         path = dirs_sorted[-1][0]
 
-        catalogue.actionOnPaths(action, [path])
+        catalogue.actionOnPaths(fs_action, [path])
 
         self.assertFalse(os.path.isdir(path))
 
         # is the tree correct
-        result_render = renderTreeStr(catalogue.rootdir)
+        result_render = renderTreeStr(catalogue.tree.root_node)
 
         self.assertEqual(render_del_dir, result_render)
-
-
-class TestGUI(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
-        cls.gui = GUI()
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.dirtree)
-
-    def testFilesDirsList(self):
-        self.gui.startdir_entry.insert(0, self.dirtree)
-        self.gui.bntList()
-
-        len_files = len(self.gui.tv_files.get_children(0))
-        self.assertEqual(len(self.files_sizes), len_files)
-
-        len_dirs = len(self.gui.tv_dirs.get_children(0))
-        self.assertEqual(len(self.dirs_sizes), len_dirs)
-
-    def testHumanReadableSize(self):
-        self.assertEqual(str(0), self.gui.humanReadableSize(0))
-        self.assertEqual(str(200), self.gui.humanReadableSize(200))
-        self.assertEqual("1.1K", self.gui.humanReadableSize(1100))
-        self.assertEqual("5.5M", self.gui.humanReadableSize(5500000))
-        self.assertEqual("60M", self.gui.humanReadableSize(60000000))
-        self.assertEqual("70G", self.gui.humanReadableSize(70000000000))
 
 
 if __name__ == "__main__":
