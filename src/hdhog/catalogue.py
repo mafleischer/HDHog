@@ -6,6 +6,7 @@ from abc import ABC, abstractclassmethod
 
 from tree import DataTree
 from container import CatalogueContainer, FileItem, DirItem
+from fsaction import FSActionDelete
 from logger import logger
 
 
@@ -68,102 +69,14 @@ class Catalogue:
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
 
-        for dir_item, file_items, dir_items in self.tree.treeFromFSBottomUp(
+        for parent_item, file_items, dir_items in self.tree.treeFromFSBottomUp(
             start=start
         ):
-            self.dirs.addItem(dir_item)
+            self.dirs.addItem(parent_item)
             for item in file_items:
                 self.files.addItem(item)
             for item in dir_items:
                 self.dirs.addItem(item)
-
-        # roots = {}
-        # dir_iids = 0
-        # file_iids = 0
-
-        # def _raiseWalkError(oserror: OSError):
-        #     """By default os.walk ignores errors. With this
-        #     function passed as onerror= parameter exceptions are
-        #     raised.
-
-        #     Args:
-        #         oserror (OSError): instance
-
-        #     Raises:
-        #         oserror:
-        #     """
-        #     raise oserror
-
-        # # do a rstrip, otherwise basename below will be empty
-        # for parent, dirs, files in os.walk(
-        #     start.rstrip("/"), topdown=False, followlinks=False, onerror=_raiseWalkError
-        # ):
-
-        #     # make directories always have a / or \ after name for easy distinction
-        #     parent_name = f"{os.path.basename(parent)}{os.path.sep}"
-        #     parent_dirpath = os.path.dirname(parent)
-
-        #     file_children = []
-
-        #     for file in sorted(files):
-
-        #         if os.path.islink(os.path.join(parent, file)):
-        #             continue
-
-        #         fi = FileItem(f"F{file_iids}", parent, file, hash_files=self.hash_files)
-        #         fi.size = os.path.getsize(os.path.join(parent, file))
-
-        #         file_children.append(fi)
-
-        #         self.files.addItem(fi)
-        #         file_iids += 1
-
-        #     # this is in "leaf directories"; no dir children
-        #     if not dirs:
-        #         d_id = f"D{dir_iids}"
-        #         parent_di = DirItem(
-        #             d_id, parent_dirpath, parent_name, file_children, []
-        #         )
-        #         roots[parent] = parent_di
-        #         self.dirs.addItem(parent_di)
-
-        #         for mirror_tree in self.mirror_trees:
-        #             mirror_tree.insertDirItem(parent_di)
-
-        #     # in upper directories subdirectories are roots at first
-        #     else:
-        #         dir_children = []
-        #         symlink_dirs = []
-        #         for d in dirs:
-        #             dirpath = os.path.join(parent, d)
-
-        #             if os.path.islink(dirpath):
-        #                 symlink_dirs.append(dirpath)
-        #                 continue
-
-        #             dir_children.append(roots[dirpath])
-
-        #         # the former roots have a parent now, so remove from them from roots
-        #         for d in dirs:
-        #             dirpath = os.path.join(parent, d)
-        #             if dirpath not in symlink_dirs:
-        #                 del roots[dirpath]
-
-        #         d_iid = f"D{dir_iids}"
-        #         parent_di = DirItem(
-        #             d_iid, parent_dirpath, parent_name, file_children, dir_children,
-        #         )
-
-        #         roots[parent] = parent_di
-        #         self.dirs.addItem(parent_di)
-
-        #         for mirror_tree in self.mirror_trees:
-        #             mirror_tree.insertDirItem(parent_di)
-
-        #     dir_iids += 1
-
-        # root_node = list(roots.items())[0][1]
-        # self.tree = DataTree(root_node)
 
     # def addFilterCheck(self, filter_check: FilterCheck):
     #     """Register a check object.
@@ -180,10 +93,7 @@ class Catalogue:
 
     #     self.filter_checks.append(filter_check)
 
-    # def deleteByIDs(selection: Tuple[str]):
-    #     self.tree.deleteByIDs(selection)
-
-    def actionOnPaths(self, fs_action: Action, paths: List[str]):
+    def deleteByIDs(self, selection: Tuple[str]):
         """Executes a files system action on file or directory paths.
 
         Remove the items representing the paths from the respective
@@ -196,9 +106,7 @@ class Catalogue:
             fs_action (Action): Action object
             paths (List[str]): full paths to files or dirs
         """
-        items = findall(
-            self.tree.root_node, filter_=lambda item: item.getFullPath() in paths
-        )
+        items = self.tree.deleteByIDs(selection)
 
         for item in items:
 
@@ -228,6 +136,7 @@ class Catalogue:
                     parent.calcSetDirSize()
                     parent = parent.parent
 
+            fs_action = FSActionDelete()
             fs_action.execute(item)
 
 
