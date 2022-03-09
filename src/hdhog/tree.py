@@ -4,23 +4,24 @@ from abc import ABC, abstractclassmethod
 from typing import Tuple
 
 from container import CatalogueItem, FileItem, DirItem
+from logger import logger
 
 
 class Tree(ABC):
     @abstractclassmethod
-    def deleteByIDs(self, iids: Tuple[str]) -> "CatalogueItem":
+    def deleteByIDs(self, iids: Tuple[str]) -> CatalogueItem:
         pass
 
     @abstractclassmethod
-    def deleteSubtree(self, node: "CatalogueItem"):
+    def deleteSubtree(self, node: CatalogueItem):
         pass
 
     @abstractclassmethod
-    def moveSubtree(self, node: "CatalogueItem"):
+    def moveSubtree(self, node: CatalogueItem):
         pass
 
     @abstractclassmethod
-    def updateAncestorsSize(node: "CatalogueItem"):
+    def updateAncestorsSize(node: CatalogueItem):
         pass
 
     @abstractclassmethod
@@ -29,13 +30,13 @@ class Tree(ABC):
 
 
 class DataTree(Tree):
-    def __init__(self, root_node: "CatalogueItem" = None):
+    def __init__(self, root_node: CatalogueItem = None):
         self.root_node = root_node
         self.file_iid = 0
         self.dir_iid = 0
         self.mirror_trees = []
 
-    def deleteByIDs(self, iids: Tuple[str]) -> "CatalogueItem":
+    def deleteByIDs(self, iids: Tuple[str]) -> CatalogueItem:
         deleted = []
         for iid in sorted(iids):
             node = find_by_attr(self.root_node, iid, name="iid")
@@ -44,10 +45,14 @@ class DataTree(Tree):
                 self.deleteSubtree(node)
         return deleted
 
-    def deleteSubtree(self, node: "CatalogueItem"):
+    def deleteSubtree(self, node: CatalogueItem):
         if node.children:
             for file_item in node.files:
+                if file_item in node.parent.files:
+                    logger.debug(f"del file in parent.files")
                 file_item.parent = None
+                if file_item in node.parent.files:
+                    logger.debug(f"del file in parent.files")
             for dir_item in node.dirs:
                 if dir_item.dirs:
                     self.deleteSubtree(dir_item)
@@ -58,10 +63,10 @@ class DataTree(Tree):
         self.updateAncestorsSize(node)
         node.parent = None
 
-    def moveSubtree(self, node: "CatalogueItem"):
+    def moveSubtree(self, node: CatalogueItem):
         pass
 
-    def rmNodeFromParent(self, node: "CatalogueItem"):
+    def rmNodeFromParent(self, node: CatalogueItem):
         if node.parent:
             p_children = [ch for ch in node.parent.children if ch != node]
             node.parent.children = tuple(p_children)
@@ -70,6 +75,7 @@ class DataTree(Tree):
 
             logger.debug(f"Removing node {node}")
             logger.debug(f"Parent {node.parent}")
+            logger.debug(f"node type {type(node)}")
 
             for file in node.parent.files:
                 logger.debug(f"file in parent files {file}")
@@ -79,7 +85,7 @@ class DataTree(Tree):
             else:
                 node.parent.dirs.removeItemByValue(node)
 
-    def updateAncestorsSize(self, node: "CatalogueItem"):
+    def updateAncestorsSize(self, node: CatalogueItem):
         parent = node.parent
         while parent:
             parent.calcSetDirSize()
@@ -176,7 +182,7 @@ class DataTree(Tree):
             else:
                 dir_children = []
                 symlink_dirs = []
-                for d in dirs:
+                for d in sorted(dirs):
                     dirpath = os.path.join(parent, d)
 
                     if os.path.islink(dirpath):
@@ -207,5 +213,5 @@ class DataTree(Tree):
 
         self.root_node = list(roots.items())[0][1]
 
-    def registerMirrorTree(tree: Tree):
+    def registerMirrorTree(self, tree: Tree):
         self.mirror_trees.append(tree)
