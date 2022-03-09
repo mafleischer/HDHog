@@ -3,6 +3,7 @@ import os
 from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
 from abc import ABC, abstractclassmethod
+from typing import List
 
 
 class CatalogueContainer:
@@ -23,9 +24,9 @@ class CatalogueContainer:
         else:
             return False
 
-    def __contains__(self, path):
+    def __contains__(self, obj):
         for item in self.container:
-            if item.getFullPath() == path:
+            if item == obj:
                 return True
         return False
 
@@ -104,13 +105,15 @@ class DirItem(CatalogueItem):
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
         self.dirs_files = CatalogueContainer()
-        self.children = file_children + dir_children
+        self.children = tuple(file_children + dir_children)
         self.size = 0
 
         if file_children or dir_children:
             self.setChildren(file_children, dir_children)
 
-    def setChildren(self, file_children: List[FileItem], dir_children: List[DirItem]):
+    def setChildren(
+        self, file_children: List[FileItem] = [], dir_children: List[DirItem] = []
+    ):
         for file_child in file_children:
             file_child.parent = self
             self.files.addItem(file_child)
@@ -120,6 +123,8 @@ class DirItem(CatalogueItem):
             dir_child.parent = self
             self.dirs.addItem(dir_child)
             self.dirs_files.addItem(dir_child)
+
+        self.children = tuple(file_children + dir_children)
 
         self.calcSetDirSize()
 
