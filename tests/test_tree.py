@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import unittest
+from anytree.search import find_by_attr
 from utils import (
     createFSDirTree,
     renderTreeStr,
@@ -41,15 +42,15 @@ def createSimpleTree():
 class TestTree(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
-        pass
+        cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
 
     @classmethod
     def tearDownClass(cls):
-        # shutil.rmtree(cls.dirtree)
-        pass
+        shutil.rmtree(cls.dirtree)
 
-    def testCreateTree(self):
+    def testCreateManualTree(self):
+        """ Quick check if dummy tree is correct"""
+
         root = createSimpleTree()
         true_init_tree = """d0    200000    /bla/d0
 ├── f0    100000    /bla/d0/f0
@@ -64,7 +65,19 @@ class TestTree(unittest.TestCase):
     def testdeleteFileNode(self):
         root = createSimpleTree()
         tree = DataTree(root)
-        tree.deleteByIDs(("f1",))
+        del_iid = "f1"
+
+        node = find_by_attr(root, del_iid, name="iid")
+        parent = node.parent
+
+        tree.deleteByIDs((del_iid,))
+        self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
+
+        with self.assertRaises(ValueError):
+            parent.files.container.index(node)
+
+        with self.assertRaises(ValueError):
+            parent.dirs_files.container.index(node)
 
         true_del_tree = """d0    150000    /bla/d0
 ├── f0    100000    /bla/d0/f0
@@ -72,22 +85,39 @@ class TestTree(unittest.TestCase):
     └── d2    50000    /bla/d1/d2
         └── f2    50000    /bla/d2/f2
 """
-
         self.assertEqual(true_del_tree, renderTreeStr(root))
 
     def testdeleteDirNode(self):
         root = createSimpleTree()
         tree = DataTree(root)
-        tree.deleteByIDs(("d2",))
+        del_iid = "d2"
+
+        node = find_by_attr(root, del_iid, name="iid")
+        parent = node.parent
+
+        tree.deleteByIDs((del_iid,))
+        self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
+
+        with self.assertRaises(ValueError):
+            parent.dirs.container.index(node)
+
+        with self.assertRaises(ValueError):
+            parent.dirs_files.container.index(node)
 
         true_del_tree = """d0    150000    /bla/d0
 ├── f0    100000    /bla/d0/f0
 └── d1    50000    /bla/d0/d1
     └── f1    50000    /bla/d1/f1
 """
-        print(renderTreeStr(root))
 
         self.assertEqual(true_del_tree, renderTreeStr(root))
+
+    def testCreateTreeFromFS(self):
+        tree = DataTree()
+        for _, _, _ in tree.treeFromFSBottomUp(self.dirtree):
+            pass
+
+        self.assertEqual(render_init, renderTreeStr(tree.root_node))
 
 
 if __name__ == "__main__":

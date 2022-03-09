@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import unittest
+from anytree.search import find_by_attr
 
 from utils import (
     createFSDirTree,
@@ -76,20 +77,25 @@ class TestCatalogue(unittest.TestCase):
         catalogue = Catalogue(hash_files=False)
         catalogue.createCatalogue(start=self.dirtree)
 
-        fs_action = FSActionDelete()
+        del_iid = "F0"
 
-        # delete biggest file
-        files_sorted = sorted(
-            self.files_sizes.items(), key=lambda tup: tup[1], reverse=True
-        )
-        path = files_sorted[0][0]
+        del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
 
-        catalogue.actionOnPaths(fs_action, [path])
+        catalogue.deleteByIDs((del_iid,))
 
+        path = del_item.getFullPath()
         self.assertFalse(os.path.isfile(path))
+
+        self.assertEqual(
+            None, find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
+        )
+
+        with self.assertRaises(ValueError):
+            catalogue.files.container.index(del_item)
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
+        print(result_render)
 
         self.assertEqual(render_del_file, result_render)
 
@@ -97,20 +103,25 @@ class TestCatalogue(unittest.TestCase):
         catalogue = Catalogue(hash_files=False)
         catalogue.createCatalogue(start=self.dirtree)
 
-        fs_action = FSActionDelete()
+        del_iid = "D0"
 
-        # delete smallest subdir
-        dirs_sorted = sorted(
-            self.dirs_sizes.items(), key=lambda tup: tup[1], reverse=True
+        del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
+
+        catalogue.deleteByIDs((del_iid,))
+
+        path = del_item.getFullPath()
+        self.assertFalse(os.path.isfile(path))
+
+        self.assertEqual(
+            None, find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
         )
-        path = dirs_sorted[-1][0]
 
-        catalogue.actionOnPaths(fs_action, [path])
-
-        self.assertFalse(os.path.isdir(path))
+        with self.assertRaises(ValueError):
+            catalogue.dirs.container.index(del_item)
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
+        print(result_render)
 
         self.assertEqual(render_del_dir, result_render)
 

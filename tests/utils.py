@@ -11,21 +11,21 @@ sys.path.append(os.path.join(parentdir, "src/hdhog/"))
 from container import CatalogueItem
 
 render_init = """dirtree/    55555000    /home/linuser/data/code/HDHog/tests/dirtree/
-├── dir_1/    55055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
-│   ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
-│   ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
-│   └── dir_2/    50055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
-│       ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
-│       ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
-│       ├── dir_3/    50000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
-│       │   ├── file4.iso    40000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file4.iso
-│       │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
-│       └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
-│           ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
-│           └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
-└── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
-    ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
-    └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+├── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
+│   ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
+│   └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+└── dir_1/    55055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
+    ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
+    ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
+    └── dir_2/    50055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
+        ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
+        ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
+        ├── dir_3/    50000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
+        │   ├── file4.iso    40000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file4.iso
+        │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
+        └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
+            ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
+            └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
 """
 
 render_del_file = """dirtree/    15555000    /home/linuser/data/code/HDHog/tests/dirtree/
@@ -45,18 +45,37 @@ render_del_file = """dirtree/    15555000    /home/linuser/data/code/HDHog/tests
     └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
 """
 
-render_del_dir = """dirtree/    15550000    /home/linuser/data/code/HDHog/tests/dirtree/
-├── dir_1/    15050000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
-│   ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
-│   ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
-│   └── dir_2/    10050000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
-│       ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
-│       ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
-│       └── dir_3/    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
-│           └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
-└── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
-    ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
-    └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+
+render_del_file = """dirtree/    15555000    /home/linuser/data/code/HDHog/tests/dirtree/
+├── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
+│   ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
+│   └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+└── dir_1/    15055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
+    ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
+    ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
+    └── dir_2/    10055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
+        ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
+        ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
+        ├── dir_3/    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
+        │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
+        └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
+            ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
+            └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
+"""
+
+render_del_dir = """dirtree/    5555000    /home/linuser/data/code/HDHog/tests/dirtree/
+├── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
+│   ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
+│   └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
+└── dir_1/    5055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
+    ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
+    ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
+    └── dir_2/    55000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
+        ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
+        ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
+        └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
+            ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
+            └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
 """
 
 with open("dirtree.json") as f:
