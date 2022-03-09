@@ -4,17 +4,112 @@ from tkinter import W
 from tkinter import MULTIPLE
 from tkinter import filedialog, messagebox
 from math import log
+from typing import List, Tuple
 
-from models import Catalogue
+from catalogue import Catalogue, DirItem
+from tree import Tree
+from logger import logger
 
-# class Tree2TreeView:
-#     def __init__(self, treeview):
+colors = {"file": "#FFF0D9", "dir": "#D7F4F3"}  # Papaya Whip, Water
+
+
+class GUITree(Tree):
+    def __init__(self, treeview: ttk.Treeview):
+        self.element = treeview
+        self.element.tag_configure("file", background=colors["file"])
+        self.element.tag_configure("dir", background=colors["dir"])
+
+    def deleteByIDs(self, iids: Tuple[str]):
+        for iid in iids:
+            parent = self.element.parent(iid)
+            size = self.element.item(iid)["values"][1]
+            update = -size
+            self.updateAncestorsSize(iid, update)
+            self.deleteSubtree(iid)
+
+    def deleteSubtree(self, item_iid: str):
+        self.element.delete(iid)
+
+    def moveSubtree(self, item_iid: str):
+        pass
+
+    def updateAncestorsSize(self, item_iid: str, update: int):
+        parent = self.element.parent(item_iid)
+        while parent:
+            name = self.element.item(parent)["values"][0]
+            size = self.element.item(parent)["values"][1]
+            self.element.item(parent, values=(name, size + update))
+            parent = self.element.parent(parent)
+
+    def insertItemsAt(self, parent_iid: str, items: List[Tuple[str, str, str]]):
+        pass
+
+    def rmNodeFromParent(item_iid: str):
+        pass
+
+    def insertDirItem(self, dir_item: DirItem):
+        dir_iid = dir_item.iid
+        dir_name = dir_item.name
+        dir_size = self.humanReadableSize(dir_item.size)
+
+        if not self.element.exists(dir_iid):
+            self.element.insert(
+                "", 0, iid=dir_iid, values=(dir_name, dir_size), tags=["dir"]
+            )
+
+        # insert sorted dirs, then sorted files
+
+        for child in dir_item.dirs:
+            c_iid = child.iid
+            c_name = child.name
+            c_size = self.humanReadableSize(child.size)
+            self.element.move(c_iid, dir_iid, "end")
+
+        for child in dir_item.files:
+            c_iid = child.iid
+            c_name = child.name
+            c_size = self.humanReadableSize(child.size)
+            # if not self.element.exists(c_iid):
+            self.element.insert(
+                dir_iid, END, iid=c_iid, values=(c_name, c_size), tags=["file"]
+            )
+
+    def humanReadableSize(self, size: int) -> str:
+        """Takes a size in bytes and returns a string with size suffix.
+
+        Takes a size in bytes (as returned from the OS FS functions) and
+        turns it into a size string in the manner of Unix' ls tool with
+        options -lh.
+
+        Args:
+            size (int): size in bytes
+
+        Returns:
+            str: size string in human readable form
+        """
+        size_suffixes = ["K", "M", "G", "T"]
+
+        if size == 0:
+            return "0"
+
+        loga = int(log(size, 1000))
+
+        if loga == 0:
+            return f"{size}"
+        else:
+            amount_suffix_x = size // (1000 ** loga)
+
+            if len(str(amount_suffix_x)) > 1:
+                return f"{amount_suffix_x}{size_suffixes[loga - 1]}"
+            else:
+                size_point = size / (1000 ** loga)
+                return f"{size_point:.1f}{size_suffixes[loga - 1]}"
 
 
 class GUI:
     def __init__(self):
 
-        """ ### Data structures ### """
+        """ ### Data models ### """
         self.catalogue = Catalogue()
 
         """ ### GUI elements ### """
@@ -103,6 +198,8 @@ class GUI:
         self.tv_files.heading("size", text="File Size")
         self.tv_files.heading("dir", text="Parent Folder")
 
+        self.tv_files.tag_configure("file", background=colors["file"])
+
         self.tv_files.pack(expand=1, fill="both")
 
         """ create directory view """
@@ -120,30 +217,37 @@ class GUI:
         self.tv_dirs.heading("size", text="Folder Size")
         self.tv_dirs.heading("dir", text="Parent Folder")
 
+        self.tv_dirs.tag_configure("dir", background=colors["dir"])
+
         self.tv_dirs.pack(expand=1, fill="both")
 
         """ create tree view """
 
         columns = ["name", "size"]
-        self.tv_tree = ttk.Treeview(
-            tab_tree, columns=columns, show="tree headings", selectmode="extended"
+        guitree = GUITree(
+            ttk.Treeview(
+                tab_tree, columns=columns, show="tree headings", selectmode="extended"
+            )
         )
+        self.catalogue.tree.registerMirrorTree(guitree)
+
+        self.tv_tree = guitree.element
         self.tv_tree.heading("name", text="Name")
         self.tv_tree.heading("size", text="Size")
         self.tv_tree.pack(expand=1, fill="both")
 
         # adding data
-        self.tv_tree.insert("", END, text="Administration", iid=0, open=False)
-        self.tv_tree.insert("", END, text="Logistics", iid=1, open=False)
-        self.tv_tree.insert("", END, text="Sales", iid=2, open=False)
-        self.tv_tree.insert("", END, text="Finance", iid=3, open=False)
-        self.tv_tree.insert("", END, text="IT", iid=4, open=False)
+        # self.tv_tree.insert("", END, text="Administration", iid=0, open=False)
+        # self.tv_tree.insert("", END, text="Logistics", iid=1, open=False)
+        # self.tv_tree.insert("", END, text="Sales", iid=2, open=False)
+        # self.tv_tree.insert("", END, text="Finance", iid=3, open=False)
+        # self.tv_tree.insert("", END, text="IT", iid=4, open=False)
 
-        # adding children of first node
-        self.tv_tree.insert("", END, text="John Doe", iid=5, open=False)
-        self.tv_tree.insert("", END, text="Jane Doe", iid=6, open=False)
-        self.tv_tree.move(5, 0, 0)
-        self.tv_tree.move(6, 0, 1)
+        # # adding children of first node
+        # self.tv_tree.insert("", END, text="John Doe", iid=5, open=False)
+        # self.tv_tree.insert("", END, text="Jane Doe", iid=6, open=False)
+        # self.tv_tree.move(5, 0, 0)
+        # self.tv_tree.move(6, 0, 1)
 
     def __del__(self):
         self.root.destroy()
@@ -164,23 +268,72 @@ class GUI:
             )
         else:
             self.catalogue.createCatalogue(start=startdir)
+
+            color_file = "#FFF0D9"
+            color_dir = "#D7F4F3"
+
             for item in self.catalogue.files:
                 iid = item.iid
                 name = item.name
                 size = self.humanReadableSize(item.size)
                 parent = item.dirpath
-                self.tv_files.insert("", END, iid=iid, values=(name, size, parent))
+                self.tv_files.insert(
+                    "", END, iid=iid, values=(name, size, parent), tags=["file"]
+                )
 
             for item in self.catalogue.dirs:
                 iid = item.iid
                 name = item.name
                 size = self.humanReadableSize(item.size)
                 parent = item.dirpath
-                self.tv_dirs.insert("", END, iid=iid, values=(name, size, parent))
+                self.tv_dirs.insert(
+                    "", END, iid=iid, values=(name, size, parent), tags=["dir"]
+                )
+
+            # root_iid = self.catalogue.tree.root_node.iid
+            # root_name = self.catalogue.tree.root_node.name
+            # # root_parent = self.catalogue.tree.root_node.parent
+            # root_size = self.catalogue.tree.root_node.size
+            # root_size = self.humanReadableSize(root_size)
+            # self.tv_tree.insert("", END, iid=root_iid, values=(root_name, root_size))
+            # # for node in self.catalogue.tree.root_node:
+            # for child in self.catalogue.tree.root_node.dirs:
+            #     self.tv_tree.insert(
+            #         root_iid,
+            #         END,
+            #         iid=child.iid,
+            #         values=(child.name, self.humanReadableSize(child.size)),
+            #     )
+            # for child in self.catalogue.tree.root_node.files:
+            #     self.tv_tree.insert(
+            #         root_iid,
+            #         END,
+            #         iid=child.iid,
+            #         values=(child.name, self.humanReadableSize(child.size)),
+            #     )
 
     def btnDeleteSelected(self):
-        # self.tv_files.delete(self.tv_files.selection())
-        pass
+        tab = self.tabs.tab(self.tabs.select(), "text")
+        logger.debug(f"Selected tab {tab}")
+
+        if tab == "Files":
+            selection = self.tv_files.selection()
+            for iid in selection:
+                self.tv_files.delete(iid)
+        elif tab == "Directories":
+            selection = self.tv_dirs.selection()
+            for iid in selection:
+                self.tv_dirs.delete(iid)
+        else:
+            selection = self.tv_tree.selection()
+            for iid in selection:
+                self.tv_tree.delete(iid)
+
+        # del_items = self.catalogue.tree.deleteByIDs(selection)
+        # for item in del_items:
+        #     self.catalogue.files.removeItemByValue(item)
+
+        self.catalogue.deleteByIDs(selection)
 
     def dummy(self):
         self.treeview.pack_forget()
