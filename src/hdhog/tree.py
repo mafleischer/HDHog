@@ -1,7 +1,7 @@
 import os
 from anytree.search import findall, find_by_attr
 from abc import ABC, abstractclassmethod
-from typing import Tuple
+from typing import Tuple, Optional
 
 from container import CatalogueItem, FileItem, DirItem
 from logger import logger
@@ -90,6 +90,14 @@ class DataTree(Tree):
         while parent:
             parent.calcSetDirSize()
             parent = parent.parent
+
+    def findByID(self, iid: str) -> Optional[CatalogueItem]:
+        item = find_by_attr(self.root_node, iid, name="iid")
+        logger.debug(f"DataTree findByID item {iid} {item}")
+        if item:
+            return item
+        else:
+            return None
 
     def treeFromFSBottomUp(self, start):
         """Walk the directory tree and put items into containers and the tree.
