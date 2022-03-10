@@ -1,3 +1,4 @@
+import os
 from tkinter import Tk, Frame, Button, Listbox, Entry, Label, ttk
 from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
 from tkinter import W
@@ -7,27 +8,67 @@ from math import log
 from typing import List, Tuple
 
 from catalogue import Catalogue, DirItem
-from tree import Tree
+from tree import Tree, DataTree
 from logger import logger
 
 colors = {"file": "#FFF0D9", "dir": "#D7F4F3"}  # Papaya Whip, Water
 
 
+def humanReadableSize(size: int) -> str:
+    """Takes a size in bytes and returns a string with size suffix.
+
+    Takes a size in bytes (as returned from the OS FS functions) and
+    turns it into a size string in the manner of Unix' ls tool with
+    options -lh.
+
+    Args:
+        size (int): size in bytes
+
+    Returns:
+        str: size string in human readable form
+    """
+    size_suffixes = ["K", "M", "G", "T"]
+
+    if size == 0:
+        return "0"
+
+    loga = int(log(size, 1000))
+
+    if loga == 0:
+        return f"{size}"
+    else:
+        amount_suffix_x = size // (1000 ** loga)
+
+        if len(str(amount_suffix_x)) > 1:
+            return f"{amount_suffix_x}{size_suffixes[loga - 1]}"
+        else:
+            size_point = size / (1000 ** loga)
+            return f"{size_point:.1f}{size_suffixes[loga - 1]}"
+
+
 class GUITree(Tree):
-    def __init__(self, treeview: ttk.Treeview):
+    def __init__(self, orig_tree: DataTree, treeview: ttk.Treeview):
+        self.orig_tree = orig_tree
         self.element = treeview
         self.element.tag_configure("file", background=colors["file"])
         self.element.tag_configure("dir", background=colors["dir"])
 
     def deleteByIDs(self, iids: Tuple[str]):
         for iid in iids:
+            item = self.orig_tree.findByID(iid)
+            if item:
+                size = item.size
+            else:
+                continue
+
             parent = self.element.parent(iid)
-            size = self.element.item(iid)["values"][1]
-            update = -size
-            self.updateAncestorsSize(iid, update)
+            if parent:
+                update = -size
+                self.updateAncestorsSize(iid, update)
+
             self.deleteSubtree(iid)
 
-    def deleteSubtree(self, item_iid: str):
+    def deleteSubtree(self, iid: str):
         self.element.delete(iid)
 
     def moveSubtree(self, item_iid: str):
@@ -37,8 +78,13 @@ class GUITree(Tree):
         parent = self.element.parent(item_iid)
         while parent:
             name = self.element.item(parent)["values"][0]
-            size = self.element.item(parent)["values"][1]
-            self.element.item(parent, values=(name, size + update))
+            item = self.orig_tree.findByID(parent)
+            if item:
+                size = item.size
+            else:
+                continue
+            new_hr_size = humanReadableSize(size + update)
+            self.element.item(parent, values=(name, new_hr_size))
             parent = self.element.parent(parent)
 
     def insertItemsAt(self, parent_iid: str, items: List[Tuple[str, str, str]]):
@@ -50,7 +96,7 @@ class GUITree(Tree):
     def insertDirItem(self, dir_item: DirItem):
         dir_iid = dir_item.iid
         dir_name = dir_item.name
-        dir_size = self.humanReadableSize(dir_item.size)
+        dir_size = humanReadableSize(dir_item.size)
 
         if not self.element.exists(dir_iid):
             self.element.insert(
@@ -62,48 +108,16 @@ class GUITree(Tree):
         for child in dir_item.dirs:
             c_iid = child.iid
             c_name = child.name
-            c_size = self.humanReadableSize(child.size)
+            c_size = humanReadableSize(child.size)
             self.element.move(c_iid, dir_iid, "end")
 
         for child in dir_item.files:
             c_iid = child.iid
             c_name = child.name
-            c_size = self.humanReadableSize(child.size)
-            # if not self.element.exists(c_iid):
+            c_size = humanReadableSize(child.size)
             self.element.insert(
                 dir_iid, END, iid=c_iid, values=(c_name, c_size), tags=["file"]
             )
-
-    def humanReadableSize(self, size: int) -> str:
-        """Takes a size in bytes and returns a string with size suffix.
-
-        Takes a size in bytes (as returned from the OS FS functions) and
-        turns it into a size string in the manner of Unix' ls tool with
-        options -lh.
-
-        Args:
-            size (int): size in bytes
-
-        Returns:
-            str: size string in human readable form
-        """
-        size_suffixes = ["K", "M", "G", "T"]
-
-        if size == 0:
-            return "0"
-
-        loga = int(log(size, 1000))
-
-        if loga == 0:
-            return f"{size}"
-        else:
-            amount_suffix_x = size // (1000 ** loga)
-
-            if len(str(amount_suffix_x)) > 1:
-                return f"{amount_suffix_x}{size_suffixes[loga - 1]}"
-            else:
-                size_point = size / (1000 ** loga)
-                return f"{size_point:.1f}{size_suffixes[loga - 1]}"
 
 
 class GUI:
@@ -224,36 +238,31 @@ class GUI:
         """ create tree view """
 
         columns = ["name", "size"]
-        guitree = GUITree(
+        self.guitree = GUITree(
+            self.catalogue.tree,
             ttk.Treeview(
                 tab_tree, columns=columns, show="tree headings", selectmode="extended"
-            )
+            ),
         )
-        self.catalogue.tree.registerMirrorTree(guitree)
+        self.catalogue.tree.registerMirrorTree(self.guitree)
 
-        self.tv_tree = guitree.element
+        self.tv_tree = self.guitree.element
         self.tv_tree.heading("name", text="Name")
         self.tv_tree.heading("size", text="Size")
         self.tv_tree.pack(expand=1, fill="both")
 
-        # adding data
-        # self.tv_tree.insert("", END, text="Administration", iid=0, open=False)
-        # self.tv_tree.insert("", END, text="Logistics", iid=1, open=False)
-        # self.tv_tree.insert("", END, text="Sales", iid=2, open=False)
-        # self.tv_tree.insert("", END, text="Finance", iid=3, open=False)
-        # self.tv_tree.insert("", END, text="IT", iid=4, open=False)
+        """ ### Keybindings ### """
 
-        # # adding children of first node
-        # self.tv_tree.insert("", END, text="John Doe", iid=5, open=False)
-        # self.tv_tree.insert("", END, text="Jane Doe", iid=6, open=False)
-        # self.tv_tree.move(5, 0, 0)
-        # self.tv_tree.move(6, 0, 1)
+        self.root.bind("<Control-q>", self.ctrlQ)
 
     def __del__(self):
-        self.root.destroy()
+        self.root.quit()
 
     def run(self):
         self.root.mainloop()
+
+    def ctrlQ(self, event):
+        self.root.quit()
 
     def btnChooseFolder(self):
         name = filedialog.askdirectory(parent=self.frame_right, mustexist=True)
@@ -266,51 +275,16 @@ class GUI:
             messagebox.showinfo(
                 title="Folder field empty", message="Choose a folder to list."
             )
+        elif not os.path.isdir(startdir):
+            messagebox.showerror(
+                title="Invalid Folder", message="Folder does not exist!"
+            )
         else:
             self.catalogue.createCatalogue(start=startdir)
-
-            color_file = "#FFF0D9"
-            color_dir = "#D7F4F3"
-
-            for item in self.catalogue.files:
-                iid = item.iid
-                name = item.name
-                size = self.humanReadableSize(item.size)
-                parent = item.dirpath
-                self.tv_files.insert(
-                    "", END, iid=iid, values=(name, size, parent), tags=["file"]
-                )
-
-            for item in self.catalogue.dirs:
-                iid = item.iid
-                name = item.name
-                size = self.humanReadableSize(item.size)
-                parent = item.dirpath
-                self.tv_dirs.insert(
-                    "", END, iid=iid, values=(name, size, parent), tags=["dir"]
-                )
-
-            # root_iid = self.catalogue.tree.root_node.iid
-            # root_name = self.catalogue.tree.root_node.name
-            # # root_parent = self.catalogue.tree.root_node.parent
-            # root_size = self.catalogue.tree.root_node.size
-            # root_size = self.humanReadableSize(root_size)
-            # self.tv_tree.insert("", END, iid=root_iid, values=(root_name, root_size))
-            # # for node in self.catalogue.tree.root_node:
-            # for child in self.catalogue.tree.root_node.dirs:
-            #     self.tv_tree.insert(
-            #         root_iid,
-            #         END,
-            #         iid=child.iid,
-            #         values=(child.name, self.humanReadableSize(child.size)),
-            #     )
-            # for child in self.catalogue.tree.root_node.files:
-            #     self.tv_tree.insert(
-            #         root_iid,
-            #         END,
-            #         iid=child.iid,
-            #         values=(child.name, self.humanReadableSize(child.size)),
-            #     )
+            self.delFiles()
+            self.listFiles()
+            self.delDirs()
+            self.listDirs()
 
     def btnDeleteSelected(self):
         tab = self.tabs.tab(self.tabs.select(), "text")
@@ -318,53 +292,50 @@ class GUI:
 
         if tab == "Files":
             selection = self.tv_files.selection()
-            for iid in selection:
-                self.tv_files.delete(iid)
+            self.tv_files.delete(selection)
         elif tab == "Directories":
             selection = self.tv_dirs.selection()
-            for iid in selection:
-                self.tv_dirs.delete(iid)
+            self.tv_dirs.delete(selection)
         else:
             selection = self.tv_tree.selection()
-            for iid in selection:
-                self.tv_tree.delete(iid)
 
-        # del_items = self.catalogue.tree.deleteByIDs(selection)
-        # for item in del_items:
-        #     self.catalogue.files.removeItemByValue(item)
-
+        self.guitree.deleteByIDs(selection)
         self.catalogue.deleteByIDs(selection)
+
+        self.delFiles()
+        self.listFiles()
+        self.delDirs()
+        self.listDirs()
+
+    def delFiles(self):
+        items = self.tv_files.get_children()
+        for iid in items:
+            self.tv_files.delete(iid)
+
+    def listFiles(self):
+        for item in self.catalogue.files:
+            iid = item.iid
+            name = item.name
+            size = humanReadableSize(item.size)
+            parent = item.dirpath
+            self.tv_files.insert(
+                "", END, iid=iid, values=(name, size, parent), tags=["file"]
+            )
+
+    def delDirs(self):
+        items = self.tv_dirs.get_children()
+        for iid in items:
+            self.tv_dirs.delete(iid)
+
+    def listDirs(self):
+        for item in self.catalogue.dirs:
+            iid = item.iid
+            name = item.name
+            size = humanReadableSize(item.size)
+            parent = item.dirpath
+            self.tv_dirs.insert(
+                "", END, iid=iid, values=(name, size, parent), tags=["dir"]
+            )
 
     def dummy(self):
         self.treeview.pack_forget()
-
-    def humanReadableSize(self, size: int) -> str:
-        """Takes a size in bytes and returns a string with size suffix.
-
-        Takes a size in bytes (as returned from the OS FS functions) and
-        turns it into a size string in the manner of Unix' ls tool with
-        options -lh.
-
-        Args:
-            size (int): size in bytes
-
-        Returns:
-            str: size string in human readable form
-        """
-        size_suffixes = ["K", "M", "G", "T"]
-
-        if size == 0:
-            return "0"
-
-        loga = int(log(size, 1000))
-
-        if loga == 0:
-            return f"{size}"
-        else:
-            amount_suffix_x = size // (1000 ** loga)
-
-            if len(str(amount_suffix_x)) > 1:
-                return f"{amount_suffix_x}{size_suffixes[loga - 1]}"
-            else:
-                size_point = size / (1000 ** loga)
-                return f"{size_point:.1f}{size_suffixes[loga - 1]}"
