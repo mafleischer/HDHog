@@ -48,11 +48,7 @@ class DataTree(Tree):
     def deleteSubtree(self, node: CatalogueItem):
         if node.children:
             for file_item in node.files:
-                if file_item in node.parent.files:
-                    logger.debug(f"del file in parent.files")
                 file_item.parent = None
-                if file_item in node.parent.files:
-                    logger.debug(f"del file in parent.files")
             for dir_item in node.dirs:
                 if dir_item.dirs:
                     self.deleteSubtree(dir_item)
@@ -77,9 +73,6 @@ class DataTree(Tree):
             logger.debug(f"Parent {node.parent}")
             logger.debug(f"node type {type(node)}")
 
-            for file in node.parent.files:
-                logger.debug(f"file in parent files {file}")
-
             if node in node.parent.files:
                 node.parent.files.removeItemByValue(node)
             else:
@@ -93,7 +86,6 @@ class DataTree(Tree):
 
     def findByID(self, iid: str) -> Optional[CatalogueItem]:
         item = find_by_attr(self.root_node, iid, name="iid")
-        logger.debug(f"DataTree findByID item {iid} {item}")
         if item:
             return item
         else:
