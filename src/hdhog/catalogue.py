@@ -82,8 +82,6 @@ class Catalogue:
 
         for item in items:
 
-            logger.debug(f"Action on {item.getFullPath()}")
-
             parent = item.parent
 
             if isinstance(item, FileItem):

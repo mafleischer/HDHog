@@ -287,7 +287,6 @@ class GUI:
 
     def btnDeleteSelected(self):
         tab = self.tabs.tab(self.tabs.select(), "text")
-        logger.debug(f"Selected tab {tab}")
 
         if tab == "Files":
             selection = self.tv_files.selection()
@@ -307,7 +306,8 @@ class GUI:
             self.catalogue.deleteByIDs(selection)
         except FileNotFoundError as fne:
             messagebox.showerror(
-                title="Not found", message=f"Cannot delete item since it does not seem to exist anymore: {fne}"
+                title="Not found",
+                message=f"Cannot delete item since it does not seem to exist anymore: {fne}",
             )
 
         # completely deleting an resinserting is for simplicity
