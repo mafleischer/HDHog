@@ -12,7 +12,7 @@ Browse a folder, list files and subfolders **sorted by size accross the director
 ## About <a name="about"></a>
 The motivation for this tool was to have something that conveniently lists big hard disk consumers in a folder and
 can delete them. There is not really something free out there. Only the very old, unmaintained and exclusively Windows-based Disk Hog:\
-https://www.softpedia.com/get/System/Hard-Disk-Utils/Disk-Hog.shtml\
+https://www.softpedia.com/get/System/Hard-Disk-Utils/Disk-Hog.shtml \
 And Disk Space Saver, which seems to do a great job but is partially paid software:\
 https://qiplex.com/software/disk-space-saver/
 
