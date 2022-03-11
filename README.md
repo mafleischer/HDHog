@@ -17,7 +17,7 @@ And Disk Space Saver, which seems to do a great job but is partially paid softwa
 https://qiplex.com/software/disk-space-saver/
 
 
-This tool is written in Python and it's basically a wrapper around its ``os.walk()`` with ``os.path.getsize()`` on the files.
+This tool is written in Python and it's mainly a wrapper around ``os.walk()`` with ``os.path.getsize()`` on the files.
 
 
 Only tested under Linux (Ubuntu) so far (since all file operations are written generically, theoretically it should work for all OSes that that Python supports and that have Tk, though).
@@ -64,3 +64,4 @@ Clone repository and run ``src/hdhog/hdhog.py``
 
 ## Notes <a name="notes"></a>
 - Symlinks are ignored and are not displayed for now
+- At first, focus was only on finding and listing files. The tree view is really not optimal but sufficient to be included for now
