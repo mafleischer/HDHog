@@ -20,25 +20,25 @@ class FSActionDelete(FSAction):
         try:
             os.remove(path)
         except FileNotFoundError:
-            logger.error("Error deleting file: File not found.")
+            logger.error("Error deleting item: Item not found.")
             raise
         except IsADirectoryError:
             shutil.rmtree(path)
 
 
-class FSActionMoveTo(FSAction):
-    def __init__(self, dest_path: str):
-        self.dest_path = dest_path
+# class FSActionMoveTo(FSAction):
+#     def __init__(self, dest_path: str):
+#         self.dest_path = dest_path
 
-    def execute(self, item: CatalogueItem):
-        path = item.getFullPath()
-        try:
-            shutil.move(path, self.dest_path)
-        except NotADirectoryError:
-            logger.error(
-                f"Error moving {path}: Destination {self.dest_path} does not exist."
-            )
-            raise
-        except FileNotFoundError:
-            logger.error(f"Error moving {path}: Source {path} does not exist.")
-            raise
+#     def execute(self, item: CatalogueItem):
+#         path = item.getFullPath()
+#         try:
+#             shutil.move(path, self.dest_path)
+#         except NotADirectoryError:
+#             logger.error(
+#                 f"Error moving {path}: Destination {self.dest_path} does not exist."
+#             )
+#             raise
+#         except FileNotFoundError:
+#             logger.error(f"Error moving {path}: Source {path} does not exist.")
+#             raise

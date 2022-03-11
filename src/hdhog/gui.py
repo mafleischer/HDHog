@@ -301,7 +301,14 @@ class GUI:
             selection = self.tv_tree.selection()
 
         self.guitree.deleteByIDs(selection)
-        self.catalogue.deleteByIDs(selection)
+
+        # in case an item has been deleted on disk by the user / os
+        try:
+            self.catalogue.deleteByIDs(selection)
+        except FileNotFoundError as fne:
+            messagebox.showerror(
+                title="Not found", message=f"Cannot delete item since it does not seem to exist anymore: {fne}"
+            )
 
         # completely deleting an resinserting is for simplicity
         # right now and will be changed
