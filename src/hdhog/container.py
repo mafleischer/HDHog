@@ -2,7 +2,6 @@ from __future__ import annotations
 import os
 from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
-from abc import ABC, abstractclassmethod
 from typing import List
 
 
@@ -43,7 +42,7 @@ class CatalogueContainer:
         self.container.remove(item)
 
 
-class CatalogueItem(ABC, NodeMixin):
+class CatalogueItem(NodeMixin):
     """This is the AB class for an item held in the catalogue
     container. It's an anytree node as well.
 
@@ -74,7 +73,6 @@ class FileItem(CatalogueItem):
     def __init__(self, iid: str, dirpath: str, name: str, hash_files: bool = False):
         super().__init__(iid, dirpath, name)
         self.setFileType(dirpath, name)
-        # self.children = []
 
     def setFileType(self, dirpath: str, name: str):
         self.type = os.path.splitext(self.name)[1]
