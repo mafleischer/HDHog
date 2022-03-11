@@ -1,3 +1,2 @@
 sortedcontainers
 anytree
-python-magic
