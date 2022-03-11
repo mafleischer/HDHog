@@ -44,23 +44,21 @@ Clone repository and run ``src/hdhog/hdhog.py``
 ## Screenshots <a name="screenshots"></a>
 
 <table>
-    <style>
+    <!-- <style>
         th{background-color:#e2fce6;}
         td{background-color:#fff9f3;}
-    </style>
+    </style> -->
     <tr>
-        <!-- <th style="background-color: #e2fce6" >View files</th> color Nyanza -->
-        <th>View files</th> <!-- color Nyanza-->
-        <!-- <td style="background-color: #fff9f3" align="center"><img src="./doc/img/files.png" alt="View files"></img></td> color Floral White -->
-        <td align="center"><img src="./doc/img/files.png" alt="View files"></img></td> <!-- color Floral White-->
+        <th style="background-color: #e2fce6" >View files</th> <!-- color Nyanza -->
+        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/files.png" alt="View files"></img></td> <!--  color Floral White -->
     </tr>
     <tr>
-        <th>View folders</th>
-        <td align="center"><img src="./doc/img/dirs.png" alt="View folders"></img></td>
+        <th style="background-color: #e2fce6" >View folders</th>
+        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/dirs.png" alt="View folders"></img></td>
     </tr>
     <tr>
-        <th>View as tree</th>
-        <td align="center"><img src="./doc/img/tree.png" alt="View as tree"></img></td>
+        <th style="background-color: #e2fce6" >View as tree</th>
+        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/tree.png" alt="View as tree"></img></td>
     </tr>
  </table>
 
