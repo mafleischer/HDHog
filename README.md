@@ -44,8 +44,10 @@ Clone repository and run ``src/hdhog/hdhog.py``
 ## Screenshots <a name="screenshots"></a>
 
 <table>
-    <style>th{background-color:#e2fce6;}</style>
-    <style>td{background-color:#fff9f3;}</style>
+    <style>
+        th{background-color:#e2fce6;}
+        td{background-color:#fff9f3;}
+    </style>
     <tr>
         <!-- <th style="background-color: #e2fce6" >View files</th> color Nyanza -->
         <th>View files</th> <!-- color Nyanza-->
