@@ -82,29 +82,11 @@ class Catalogue:
 
         for item in items:
 
-            parent = item.parent
-
             if isinstance(item, FileItem):
                 self.files.removeItemByValue(item)
-                if parent:
-                    parent.files.removeItemByValue(item)
 
             if isinstance(item, DirItem):
                 self.dirs.removeItemByValue(item)
-                if parent:
-                    parent.dirs.removeItemByValue(item)
-
-            # recalculate and set size of all parents up the tree
-
-            if parent:
-                parent.dirs_files.removeItemByValue(item)
-                parent.children = [child for child in parent.children if child != item]
-                parent.calcSetDirSize()
-
-                parent = parent.parent
-                while parent:
-                    parent.calcSetDirSize()
-                    parent = parent.parent
 
             fs_action = FSActionDelete()
             fs_action.execute(item)
