@@ -13,11 +13,11 @@ from logger import logger
 class Catalogue:
     """This represents the walking of the directory tree and holding the resulting
     information, as well as actions taken on catalogue items, i.e. files and directories.
-    This class holds three central structures / elements:
+    This class holds three structures / elements:
         1. A CatalogueContainer for files, which is just for file-based sorting
         2. A CatalogueContainer for directories, which is just for
         directory-based sorting
-        3. The root node of the directory tree. Nodes in the tree are
+        3. The DataTree. Nodes in the tree are
         FileItems or DirItems which inherit from anytree's NodeMixin.
         Each node in turn holds CatalogueContainers for holding children
         items.
@@ -32,38 +32,10 @@ class Catalogue:
         self.hash_files = hash_files
 
     def createCatalogue(self, start):
-        """Walk the directory tree and put items into containers and the tree.
-
-        This wraps os.walk() with topdown=False, so it builds the tree bottom up.
-        This is so the sizes of the directories can be calculated directly
-        when building the tree.
-
-        Algorithm:
-
-        1. Iterate over the files and put them in FileItems, insert into the
-        files container
-
-        2. Iterate over the directories.
-            If it has no subdirectories create a DirItem for the parent
-            directoy with just the files as children and store the
-            DirItem as a root. Insert into directory container.
-            This is in "leaf directories", so the algorithm starts with
-            these as the bottom-most roots.
-            
-            Else create a DirItem with the subdirectories, which are now not
-            roots anymore and are removed from the roots dict, as children as
-            well, make it their parent and store it in the roots dict.
-            Insert into directory container.
-
-        The algorithm terminates with setting the topmost directory as the root
-        item / node of self.tree
-                
-        Symlinks are skipped.
-
-        Size calculation of the items is handled by the item objects on creation.
+        """Have the directory tree built up as structure and put items into containers.
 
         Args:
-            start (str, optional): Start of the walk. Defaults to "/".
+            start (str, optional): Top directory.
         """
 
         self.files = CatalogueContainer()

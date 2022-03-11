@@ -11,15 +11,14 @@ from catalogue import Catalogue, DirItem
 from tree import Tree, DataTree
 from logger import logger
 
-colors = {"file": "#FFF0D9", "dir": "#D7F4F3"}  # Papaya Whip, Water
+item_colors = {"file": "#FFF0D9", "dir": "#D7F4F3"}  # Papaya Whip, Water
 
 
 def humanReadableSize(size: int) -> str:
     """Takes a size in bytes and returns a string with size suffix.
 
     Takes a size in bytes (as returned from the OS FS functions) and
-    turns it into a size string in the manner of Unix' ls tool with
-    options -lh.
+    turns it into a size string in the manner of Unix' ls -lh.
 
     Args:
         size (int): size in bytes
@@ -50,8 +49,8 @@ class GUITree(Tree):
     def __init__(self, orig_tree: DataTree, treeview: ttk.Treeview):
         self.orig_tree = orig_tree
         self.element = treeview
-        self.element.tag_configure("file", background=colors["file"])
-        self.element.tag_configure("dir", background=colors["dir"])
+        self.element.tag_configure("file", background=item_colors["file"])
+        self.element.tag_configure("dir", background=item_colors["dir"])
 
     def deleteByIDs(self, iids: Tuple[str]):
         for iid in iids:
@@ -71,9 +70,6 @@ class GUITree(Tree):
     def deleteSubtree(self, iid: str):
         self.element.delete(iid)
 
-    def moveSubtree(self, item_iid: str):
-        pass
-
     def updateAncestorsSize(self, item_iid: str, update: int):
         parent = self.element.parent(item_iid)
         while parent:
@@ -86,12 +82,6 @@ class GUITree(Tree):
             new_hr_size = humanReadableSize(size + update)
             self.element.item(parent, values=(name, new_hr_size))
             parent = self.element.parent(parent)
-
-    def insertItemsAt(self, parent_iid: str, items: List[Tuple[str, str, str]]):
-        pass
-
-    def rmNodeFromParent(item_iid: str):
-        pass
 
     def insertDirItem(self, dir_item: DirItem):
         dir_iid = dir_item.iid
@@ -152,8 +142,12 @@ class GUI:
         )
         self.lbl_choose_info.pack(side=TOP)
 
+        """ Folder entry """
+
         self.startdir_entry = Entry(self.frame_right, width=50, bd=5)
         self.startdir_entry.pack(side=TOP)
+
+        """ Browse for directory button"""
 
         self.button_choose_folder = Button(
             self.frame_right,
@@ -163,10 +157,13 @@ class GUI:
         )
         self.button_choose_folder.pack(side=TOP, pady=10)
 
+        """ Button walk and list directory in folder entry """
         self.button_list = Button(
             self.frame_right, text="List", width=50, command=self.bntList,
         )
         self.button_list.pack(side=TOP)
+
+        """ button delete selection """
 
         self.button_delete_selected = Button(
             self.frame_right,
@@ -175,6 +172,8 @@ class GUI:
             command=self.btnDeleteSelected,
         )
         self.button_delete_selected.pack(side=TOP, pady=50)
+
+        """ quit button """
 
         self.button_quit = Button(
             self.frame_right, text="Quit", width=50, command=self.__del__
@@ -212,7 +211,7 @@ class GUI:
         self.tv_files.heading("size", text="File Size")
         self.tv_files.heading("dir", text="Parent Folder")
 
-        self.tv_files.tag_configure("file", background=colors["file"])
+        self.tv_files.tag_configure("file", background=item_colors["file"])
 
         self.tv_files.pack(expand=1, fill="both")
 
@@ -231,7 +230,7 @@ class GUI:
         self.tv_dirs.heading("size", text="Folder Size")
         self.tv_dirs.heading("dir", text="Parent Folder")
 
-        self.tv_dirs.tag_configure("dir", background=colors["dir"])
+        self.tv_dirs.tag_configure("dir", background=item_colors["dir"])
 
         self.tv_dirs.pack(expand=1, fill="both")
 
@@ -265,9 +264,9 @@ class GUI:
         self.root.quit()
 
     def btnChooseFolder(self):
-        name = filedialog.askdirectory(parent=self.frame_right, mustexist=True)
+        path = filedialog.askdirectory(parent=self.frame_right, mustexist=True)
         self.startdir_entry.delete(0, END)
-        self.startdir_entry.insert(0, name)
+        self.startdir_entry.insert(0, path)
 
     def bntList(self):
         startdir = self.startdir_entry.get()
@@ -292,16 +291,20 @@ class GUI:
 
         if tab == "Files":
             selection = self.tv_files.selection()
-            self.tv_files.delete(selection)
+            for iid in selection:
+                self.tv_files.delete(iid)
         elif tab == "Directories":
             selection = self.tv_dirs.selection()
-            self.tv_dirs.delete(selection)
+            for iid in selection:
+                self.tv_dirs.delete(iid)
         else:
             selection = self.tv_tree.selection()
 
         self.guitree.deleteByIDs(selection)
         self.catalogue.deleteByIDs(selection)
 
+        # completely deleting an resinserting is for simplicity
+        # right now and will be changed
         self.delFiles()
         self.listFiles()
         self.delDirs()
@@ -336,6 +339,3 @@ class GUI:
             self.tv_dirs.insert(
                 "", END, iid=iid, values=(name, size, parent), tags=["dir"]
             )
-
-    def dummy(self):
-        self.treeview.pack_forget()

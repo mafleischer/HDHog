@@ -1,7 +1,7 @@
 import os
 from anytree.search import findall, find_by_attr
 from abc import ABC, abstractclassmethod
-from typing import Tuple, Optional
+from typing import Tuple, List, Optional
 
 from container import CatalogueItem, FileItem, DirItem
 from logger import logger
@@ -17,26 +17,18 @@ class Tree(ABC):
         pass
 
     @abstractclassmethod
-    def moveSubtree(self, node: CatalogueItem):
-        pass
-
-    @abstractclassmethod
     def updateAncestorsSize(node: CatalogueItem):
-        pass
-
-    @abstractclassmethod
-    def rmNodeFromParent(node):
         pass
 
 
 class DataTree(Tree):
     def __init__(self, root_node: CatalogueItem = None):
         self.root_node = root_node
-        self.file_iid = 0
-        self.dir_iid = 0
+        self.file_iid = 0  # counter for file iids
+        self.dir_iid = 0  # counter for dir iids
         self.mirror_trees = []
 
-    def deleteByIDs(self, iids: Tuple[str]) -> CatalogueItem:
+    def deleteByIDs(self, iids: Tuple[str]) -> List[CatalogueItem]:
         deleted = []
         for iid in sorted(iids):
             node = find_by_attr(self.root_node, iid, name="iid")
@@ -59,19 +51,17 @@ class DataTree(Tree):
         self.updateAncestorsSize(node)
         node.parent = None
 
-    def moveSubtree(self, node: CatalogueItem):
-        pass
-
     def rmNodeFromParent(self, node: CatalogueItem):
+        """Remove a node from all of its parent's structures
+
+        Args:
+            node (CatalogueItem): To-be-remove-node
+        """
         if node.parent:
             p_children = [ch for ch in node.parent.children if ch != node]
             node.parent.children = tuple(p_children)
 
             node.parent.dirs_files.removeItemByValue(node)
-
-            logger.debug(f"Removing node {node}")
-            logger.debug(f"Parent {node.parent}")
-            logger.debug(f"node type {type(node)}")
 
             if node in node.parent.files:
                 node.parent.files.removeItemByValue(node)
@@ -79,12 +69,26 @@ class DataTree(Tree):
                 node.parent.dirs.removeItemByValue(node)
 
     def updateAncestorsSize(self, node: CatalogueItem):
+        """Update sizes of all ancestors of a node that has already been removed
+        from parent's structures
+
+        Args:
+            node (CatalogueItem): removed node
+        """
         parent = node.parent
         while parent:
             parent.calcSetDirSize()
             parent = parent.parent
 
     def findByID(self, iid: str) -> Optional[CatalogueItem]:
+        """Find node by its iid string and return it.
+
+        Args:
+            iid (str): iid
+
+        Returns:
+            Optional[CatalogueItem]: item or None
+        """
         item = find_by_attr(self.root_node, iid, name="iid")
         if item:
             return item
@@ -92,16 +96,18 @@ class DataTree(Tree):
             return None
 
     def treeFromFSBottomUp(self, start):
-        """Walk the directory tree and put items into containers and the tree.
+        """Generator that walks the directory tree and builds the tree from the items.
 
         This wraps os.walk() with topdown=False, so it builds the tree bottom up.
         This is so the sizes of the directories can be calculated directly
         when building the tree.
 
+        Implemented as generator so outside calling functions can keep track
+        simultaneously and do stuff with the created items.
+
         Algorithm:
 
-        1. Iterate over the files and put them in FileItems, insert into the
-        files container
+        1. Iterate over the files and put them in FileItems.
 
         2. Iterate over the directories.
             If it has no subdirectories create a DirItem for the parent
@@ -116,19 +122,15 @@ class DataTree(Tree):
             Insert into directory container.
 
         The algorithm terminates with setting the topmost directory as the root
-        item / node of self.tree
+        item / node.
                 
         Symlinks are skipped.
 
-        Size calculation of the items is handled by the item objects on creation.
-
         Args:
-            start (str, optional): Start of the walk. Defaults to "/".
+            start (str, optional): Start of the walk..
         """
 
         roots = {}
-        dir_iids = 0
-        file_iids = 0
 
         def _raiseWalkError(oserror: OSError):
             """By default os.walk ignores errors. With this
