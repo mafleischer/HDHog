@@ -15,7 +15,7 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(os.path.join(parentdir, "src/hdhog/"))
 
-from gui import GUI
+from gui import GUI, humanReadableSize
 
 
 class TestGUI(unittest.TestCase):
@@ -39,12 +39,12 @@ class TestGUI(unittest.TestCase):
         self.assertEqual(len(self.dirs_sizes), len_dirs)
 
     def testHumanReadableSize(self):
-        self.assertEqual(str(0), self.gui.humanReadableSize(0))
-        self.assertEqual(str(200), self.gui.humanReadableSize(200))
-        self.assertEqual("1.1K", self.gui.humanReadableSize(1100))
-        self.assertEqual("5.5M", self.gui.humanReadableSize(5500000))
-        self.assertEqual("60M", self.gui.humanReadableSize(60000000))
-        self.assertEqual("70G", self.gui.humanReadableSize(70000000000))
+        self.assertEqual(str(0), humanReadableSize(0))
+        self.assertEqual(str(200), humanReadableSize(200))
+        self.assertEqual("1.1K", humanReadableSize(1100))
+        self.assertEqual("5.5M", humanReadableSize(5500000))
+        self.assertEqual("60M", humanReadableSize(60000000))
+        self.assertEqual("70G", humanReadableSize(70000000000))
 
 
 if __name__ == "__main__":
