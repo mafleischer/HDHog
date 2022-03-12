@@ -10,7 +10,7 @@
 Browse a folder, list files and subfolders **sorted by size accross the directory tree** so that you see the biggest first.
 
 ## About <a name="about"></a>
-One motivation for this tool was to have something that conveniently lists big disk space consumers in a folder and
+A motivation for this tool was to have something that conveniently lists big disk space consumers in a folder and
 can delete them. There is not really something free out there. Only the very old, unmaintained and exclusively Windows-based Disk Hog:\
 https://www.softpedia.com/get/System/Hard-Disk-Utils/Disk-Hog.shtml \
 And Disk Space Saver, which seems to do a great job but is partially paid software:\
@@ -53,15 +53,15 @@ pip3 install ./
     </style> -->
     <tr>
         <th style="background-color: #e2fce6" >View files</th> <!-- color Nyanza -->
-        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/files.png" alt="View files"></img></td> <!--  color Floral White -->
+        <td style="background-color: #fff9f3" align="center"><img src="https://raw.githubusercontent.com/mafleischer/HDHog/master/doc/img/files.png" alt="View files"></img></td> <!--  color Floral White -->
     </tr>
     <tr>
         <th style="background-color: #e2fce6" >View folders</th>
-        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/dirs.png" alt="View folders"></img></td>
+        <td style="background-color: #fff9f3" align="center"><img src="https://raw.githubusercontent.com/mafleischer/HDHog/master/doc/img/dirs.png" alt="View folders"></img></td>
     </tr>
     <tr>
         <th style="background-color: #e2fce6" >View as tree</th>
-        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/tree.png" alt="View as tree"></img></td>
+        <td style="background-color: #fff9f3" align="center"><img src="https://raw.githubusercontent.com/mafleischer/HDHog/master/doc/img/tree.png" alt="View as tree"></img></td>
     </tr>
  </table>
 

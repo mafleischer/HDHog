@@ -3,8 +3,8 @@ from anytree.search import findall, find_by_attr
 from abc import ABC, abstractclassmethod
 from typing import Tuple, List, Optional
 
-from container import CatalogueItem, FileItem, DirItem
-from logger import logger
+from .container import CatalogueItem, FileItem, DirItem
+from .logger import logger
 
 
 class Tree(ABC):
@@ -30,15 +30,19 @@ class DataTree(Tree):
 
     def deleteByIDs(self, iids: Tuple[str]) -> List[CatalogueItem]:
         deleted = []
+        logger.debug(f"Deleting iids {iids} from tree.")
         for iid in sorted(iids):
             node = find_by_attr(self.root_node, iid, name="iid")
             if node:
                 deleted.append(node)
                 self.deleteSubtree(node)
+        logger.debug(f"Deleted items {deleted} and children from tree.")
         return deleted
 
     def deleteSubtree(self, node: CatalogueItem):
+        logger.debug(f"Detaching node {node}.")
         if node.children:
+            logger.debug(f"Detaching all children of {node}")
             for file_item in node.files:
                 file_item.parent = None
             for dir_item in node.dirs:
@@ -58,6 +62,7 @@ class DataTree(Tree):
             node (CatalogueItem): To-be-remove-node
         """
         if node.parent:
+            logger.debug(f"Remove node {node} from parent structures.")
             p_children = [ch for ch in node.parent.children if ch != node]
             node.parent.children = tuple(p_children)
 
@@ -75,8 +80,10 @@ class DataTree(Tree):
         Args:
             node (CatalogueItem): removed node
         """
+        logger.debug(f"Update ancestors of {node}")
         parent = node.parent
         while parent:
+            logger.debug(f"Updating size of ancestor {parent}.")
             parent.calcSetDirSize()
             parent = parent.parent
 
@@ -115,7 +122,7 @@ class DataTree(Tree):
             DirItem as a root. Insert into directory container.
             This is in "leaf directories", so the algorithm starts with
             these as the bottom-most roots.
-            
+
             Else create a DirItem with the subdirectories, which are now not
             roots anymore and are removed from the roots dict, as children as
             well, make it their parent and store it in the roots dict.
@@ -123,7 +130,7 @@ class DataTree(Tree):
 
         The algorithm terminates with setting the topmost directory as the root
         item / node.
-                
+  
         Symlinks are skipped.
 
         Args:
@@ -159,6 +166,7 @@ class DataTree(Tree):
             for file in sorted(files):
 
                 if os.path.islink(os.path.join(parent, file)):
+                    logger.debug(f"Skipping link {os.path.join(parent, file)}.")
                     continue
 
                 fi = FileItem(f"F{self.file_iid}", parent, file)
@@ -189,6 +197,7 @@ class DataTree(Tree):
 
                     if os.path.islink(dirpath):
                         symlink_dirs.append(dirpath)
+                        logger.debug(f"Skipping link {dirpath}.")
                         continue
 
                     dir_children.append(roots[dirpath])

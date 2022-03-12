@@ -7,9 +7,9 @@ from tkinter import filedialog, messagebox
 from math import log
 from typing import List, Tuple
 
-from catalogue import Catalogue, DirItem
-from tree import Tree, DataTree
-from logger import logger
+from .catalogue import Catalogue, DirItem
+from .tree import Tree, DataTree
+from .logger import logger
 
 item_colors = {"file": "#FFF0D9", "dir": "#D7F4F3"}  # Papaya Whip, Water
 
@@ -31,6 +31,8 @@ def humanReadableSize(size: int) -> str:
     if size == 0:
         return "0"
 
+    logger.debug(f"Calculating h.r. size for bytes: {size}.")
+
     loga = int(log(size, 1000))
 
     if loga == 0:
@@ -39,10 +41,14 @@ def humanReadableSize(size: int) -> str:
         amount_suffix_x = size // (1000 ** loga)
 
         if len(str(amount_suffix_x)) > 1:
-            return f"{amount_suffix_x}{size_suffixes[loga - 1]}"
+            hr_size = f"{amount_suffix_x}{size_suffixes[loga - 1]}"
+            logger.debug(f"Human readable size is {hr_size}")
+            return hr_size
         else:
             size_point = size / (1000 ** loga)
-            return f"{size_point:.1f}{size_suffixes[loga - 1]}"
+            hr_size = f"{size_point:.1f}{size_suffixes[loga - 1]}"
+            logger.debug(f"Human readable size is {hr_size}")
+            return hr_size
 
 
 class GUITree(Tree):
@@ -53,6 +59,7 @@ class GUITree(Tree):
         self.element.tag_configure("dir", background=item_colors["dir"])
 
     def deleteByIDs(self, iids: Tuple[str]):
+        logger.debug(f"Deleting iids {iids}.")
         for iid in iids:
             item = self.orig_tree.findByID(iid)
             if item:
@@ -298,6 +305,8 @@ class GUI:
                 self.tv_dirs.delete(iid)
         else:
             selection = self.tv_tree.selection()
+
+        logger.info(f"Deleting selection from tab {tab}.")
 
         self.guitree.deleteByIDs(selection)
 

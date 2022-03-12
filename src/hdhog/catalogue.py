@@ -4,10 +4,10 @@ from sortedcontainers import SortedKeyList
 from anytree.search import findall
 from abc import ABC, abstractclassmethod
 
-from tree import DataTree
-from container import CatalogueContainer, FileItem, DirItem
-from fsaction import FSActionDelete
-from logger import logger
+from .tree import DataTree
+from .container import CatalogueContainer, FileItem, DirItem
+from .fsaction import FSActionDelete
+from .logger import logger
 
 
 class Catalogue:
@@ -41,14 +41,21 @@ class Catalogue:
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
 
-        for parent_item, file_items, dir_items in self.tree.treeFromFSBottomUp(
-            start=start
-        ):
-            self.dirs.addItem(parent_item)
-            for item in file_items:
-                self.files.addItem(item)
-            for item in dir_items:
-                self.dirs.addItem(item)
+        logger.info("Start creating catalogue (bottom up).")
+
+        try:
+            for parent_item, file_items, dir_items in self.tree.treeFromFSBottomUp(
+                start=start
+            ):
+                self.dirs.addItem(parent_item)
+                for item in file_items:
+                    self.files.addItem(item)
+                for item in dir_items:
+                    self.dirs.addItem(item)
+        except Exception as e:
+            logger.error(f"Error when walking the directory tree: {e}")
+
+        logger.info("Finished creating catalogue.")
 
     # def addFilterCheck(self, filter_check: FilterCheck):
     #     """Register a check object.
@@ -82,14 +89,20 @@ class Catalogue:
 
         for item in items:
 
+            logger.debug(f"Deleting item {item}.")
+
             if isinstance(item, FileItem):
+                logger.debug(f"Removing {item} from file list.")
                 self.files.removeItemByValue(item)
 
             if isinstance(item, DirItem):
+                logger.debug(f"Removing {item} from dir list.")
                 self.dirs.removeItemByValue(item)
 
             fs_action = FSActionDelete()
             fs_action.execute(item)
+
+        logger.info(f"Removed {len(items)} from catalogue and disk.")
 
 
 # class FilterCheck(ABC):

@@ -4,6 +4,8 @@ from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
 from typing import List
 
+from .logger import logger
+
 
 class CatalogueContainer:
     """Holds CatalogueItems (actual objects) and provides sorting thereof.
@@ -107,6 +109,7 @@ class DirItem(CatalogueItem):
         self.size = 0
 
         if file_children or dir_children:
+            logger.debug(f"Setting children of {self} on __init__ .")
             self.setChildren(file_children, dir_children)
 
     def setChildren(
@@ -124,11 +127,17 @@ class DirItem(CatalogueItem):
 
         self.children = tuple(file_children + dir_children)
 
+        logger.debug(f"File children of {self} are {file_children}.")
+        logger.debug(f"Dir children of {self} are {dir_children}.")
+
         self.calcSetDirSize()
 
     def calcSetDirSize(self):
         """Calculate size from all direct children and set it.
         """
+        logger.debug(f"Update size of {self}, old size: {self.size}.")
+
         sum_size = 0
         sum_size += sum([child.size for child in self.children])
         self.size = sum_size
+        logger.debug(f"Update size of {self}, new size: {self.size}.")

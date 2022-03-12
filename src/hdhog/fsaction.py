@@ -2,8 +2,8 @@ import shutil
 import os
 from abc import ABC, abstractclassmethod
 
-from container import CatalogueItem
-from logger import logger
+from .container import CatalogueItem
+from .logger import logger
 
 
 class FSAction(ABC):
@@ -17,10 +17,11 @@ class FSAction(ABC):
 class FSActionDelete(FSAction):
     def execute(self, item: CatalogueItem):
         path = item.getFullPath()
+        logger.debug(f"Removing {path} from disk.")
         try:
             os.remove(path)
-        except FileNotFoundError:
-            logger.error("Error deleting item: Item not found.")
+        except FileNotFoundError as fne:
+            logger.error(f"Error deleting item: Item not found. Message: {fne}")
             raise
         except IsADirectoryError:
             shutil.rmtree(path)

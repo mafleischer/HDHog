@@ -12,13 +12,7 @@ from utils import (
     render_del_dir,
 )
 
-
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-sys.path.append(os.path.join(parentdir, "src/hdhog/"))
-
-from catalogue import Catalogue
-from fsaction import FSActionDelete
+from hdhog.catalogue import Catalogue
 
 unittest.TestLoader.sortTestMethodsUsing = None
 
@@ -95,7 +89,6 @@ class TestCatalogue(unittest.TestCase):
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
-        print(result_render)
 
         self.assertEqual(render_del_file, result_render)
 
@@ -121,7 +114,6 @@ class TestCatalogue(unittest.TestCase):
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
-        print(result_render)
 
         self.assertEqual(render_del_dir, result_render)
 
