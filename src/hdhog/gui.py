@@ -1,5 +1,6 @@
 import os
-from tkinter import Tk, Frame, Button, Listbox, Entry, Label, ttk
+from tkinter import Tk, Button, Listbox, Entry, Label
+from tkinter.ttk import Treeview, Notebook, Frame
 from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
 from tkinter import W
 from tkinter import MULTIPLE
@@ -51,12 +52,19 @@ def humanReadableSize(size: int) -> str:
             return hr_size
 
 
-class GUITree(Tree):
-    def __init__(self, orig_tree: DataTree, treeview: ttk.Treeview):
+class GUITree(Tree, Treeview):
+    def __init__(self, orig_tree: DataTree, parent_widget, columns):
+        Treeview.__init__(
+            self,
+            parent_widget,
+            columns=columns,
+            show="tree headings",
+            selectmode="extended",
+        )
         self.orig_tree = orig_tree
-        self.element = treeview
-        self.element.tag_configure("file", background=item_colors["file"])
-        self.element.tag_configure("dir", background=item_colors["dir"])
+        # self = treeview
+        self.tag_configure("file", background=item_colors["file"])
+        self.tag_configure("dir", background=item_colors["dir"])
 
     def deleteByIDs(self, iids: Tuple[str]):
         logger.debug(f"Deleting iids {iids}.")
@@ -67,7 +75,7 @@ class GUITree(Tree):
             else:
                 continue
 
-            parent = self.element.parent(iid)
+            parent = self.parent(iid)
             if parent:
                 update = -size
                 self.updateAncestorsSize(iid, update)
@@ -75,30 +83,28 @@ class GUITree(Tree):
             self.deleteSubtree(iid)
 
     def deleteSubtree(self, iid: str):
-        self.element.delete(iid)
+        self.delete(iid)
 
     def updateAncestorsSize(self, item_iid: str, update: int):
-        parent = self.element.parent(item_iid)
+        parent = self.parent(item_iid)
         while parent:
-            name = self.element.item(parent)["values"][0]
+            name = self.item(parent)["values"][0]
             item = self.orig_tree.findByID(parent)
             if item:
                 size = item.size
             else:
                 continue
             new_hr_size = humanReadableSize(size + update)
-            self.element.item(parent, values=(name, new_hr_size))
-            parent = self.element.parent(parent)
+            self.item(parent, values=(name, new_hr_size))
+            parent = self.parent(parent)
 
     def insertDirItem(self, dir_item: DirItem):
         dir_iid = dir_item.iid
         dir_name = dir_item.name
         dir_size = humanReadableSize(dir_item.size)
 
-        if not self.element.exists(dir_iid):
-            self.element.insert(
-                "", 0, iid=dir_iid, values=(dir_name, dir_size), tags=["dir"]
-            )
+        if not self.exists(dir_iid):
+            self.insert("", 0, iid=dir_iid, values=(dir_name, dir_size), tags=["dir"])
 
         # insert sorted dirs, then sorted files
 
@@ -106,15 +112,13 @@ class GUITree(Tree):
             c_iid = child.iid
             c_name = child.name
             c_size = humanReadableSize(child.size)
-            self.element.move(c_iid, dir_iid, "end")
+            self.move(c_iid, dir_iid, "end")
 
         for child in dir_item.files:
             c_iid = child.iid
             c_name = child.name
             c_size = humanReadableSize(child.size)
-            self.element.insert(
-                dir_iid, END, iid=c_iid, values=(c_name, c_size), tags=["file"]
-            )
+            self.insert(dir_iid, END, iid=c_iid, values=(c_name, c_size), tags=["file"])
 
 
 class GUI:
@@ -195,10 +199,10 @@ class GUI:
 
         """ create tabs """
 
-        self.tabs = ttk.Notebook(self.frame_left)
-        tab_files = ttk.Frame(self.tabs)
-        tab_dirs = ttk.Frame(self.tabs)
-        tab_tree = ttk.Frame(self.tabs)
+        self.tabs = Notebook(self.frame_left)
+        tab_files = Frame(self.tabs)
+        tab_dirs = Frame(self.tabs)
+        tab_tree = Frame(self.tabs)
         self.tabs.add(tab_files, text="Files")
         self.tabs.add(tab_dirs, text="Directories")
         self.tabs.add(tab_tree, text="Tree View")
@@ -207,7 +211,7 @@ class GUI:
         """ create files view """
 
         columns = ["name", "size", "dir"]
-        self.tv_files = ttk.Treeview(
+        self.tv_files = Treeview(
             tab_files, columns=columns, show="headings", selectmode="extended"
         )
         self.tv_files.column("size", width=80, minwidth=80, stretch=False)
@@ -225,7 +229,7 @@ class GUI:
         """ create directory view """
 
         columns = ["name", "size", "dir"]
-        self.tv_dirs = ttk.Treeview(
+        self.tv_dirs = Treeview(
             tab_dirs, columns=columns, show="headings", selectmode="extended"
         )
 
@@ -245,15 +249,16 @@ class GUI:
 
         columns = ["name", "size"]
 
-        self.guitree = GUITree(
-            self.catalogue.tree,
-            ttk.Treeview(
-                tab_tree, columns=columns, show="tree headings", selectmode="extended"
-            ),
-        )
+        # self.guitree = GUITree(
+        #     self.catalogue.tree,
+        #     Treeview(
+        #         tab_tree, columns=columns, show="tree headings", selectmode="extended"
+        #     ),
+        # )
+        self.guitree = GUITree(self.catalogue.tree, tab_tree, columns=columns)
         self.catalogue.registerMirrorTrees([self.guitree])
 
-        self.tv_tree = self.guitree.element
+        self.tv_tree = self.guitree
         self.tv_tree.heading("name", text="Name")
         self.tv_tree.heading("size", text="Size")
         self.tv_tree.pack(expand=1, fill="both")
