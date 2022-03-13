@@ -37,6 +37,7 @@ git clone https://github.com/mafleischer/HDHog
 cd HDHog
 pip3 install ./
 ```
+and run ``hdhog`` in a terminal.
 
 ## Screenshots <a name="screenshots"></a>
 
@@ -46,16 +47,17 @@ pip3 install ./
         td{background-color:#fff9f3;}
     </style> -->
     <tr>
+        <!-- github raw links used so this README is rendered on PyPi too -->
         <th style="background-color: #e2fce6" >View files</th> <!-- color Nyanza -->
-        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/files.png" alt="View files"></img></td> <!--  color Floral White -->
+        <td style="background-color: #fff9f3" align="center"><img src="https://raw.githubusercontent.com/mafleischer/HDHog/master/doc/img/files.png" alt="View files"></img></td> <!--  color Floral White -->
     </tr>
     <tr>
         <th style="background-color: #e2fce6" >View folders</th>
-        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/dirs.png" alt="View folders"></img></td>
+        <td style="background-color: #fff9f3" align="center"><img src="https://raw.githubusercontent.com/mafleischer/HDHog/master/doc/img/dirs.png" alt="View folders"></img></td>
     </tr>
     <tr>
         <th style="background-color: #e2fce6" >View as tree</th>
-        <td style="background-color: #fff9f3" align="center"><img src="./doc/img/tree.png" alt="View as tree"></img></td>
+        <td style="background-color: #fff9f3" align="center"><img src="https://raw.githubusercontent.com/mafleischer/HDHog/master/doc/img/tree.png" alt="View as tree"></img></td>
     </tr>
  </table>
 
