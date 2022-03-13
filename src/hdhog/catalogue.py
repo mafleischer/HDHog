@@ -2,9 +2,9 @@ import os
 from sortedcontainers import SortedKeyList
 from anytree.search import findall
 from abc import ABC, abstractclassmethod
-from typing import Tuple
+from typing import Tuple, List
 
-from .tree import DataTree
+from .tree import Tree, DataTree
 from .container import CatalogueContainer, FileItem, DirItem
 from .fsaction import FSActionDelete
 from .logger import logger
@@ -23,13 +23,16 @@ class Catalogue:
         items.
     """
 
-    def __init__(self, mirror_trees=[], hash_files=False):
+    def __init__(self, hash_files=False):
         # self.filter_checks = []
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
         self.tree = DataTree()
-        self.mirror_trees = mirror_trees
+        self.mirror_trees = []
         self.hash_files = hash_files
+
+    def registerMirrorTrees(self, trees: List[Tree]):
+        self.mirror_trees.extend(trees)
 
     def createCatalogue(self, start):
         """Have the directory tree built up as structure and put items into containers.
@@ -53,6 +56,10 @@ class Catalogue:
                     self.files.addItem(item)
                 for item in dir_items:
                     self.dirs.addItem(item)
+
+                for tree in self.mirror_trees:
+                    tree.insertDirItem(parent_item)
+
         except Exception as e:
             logger.error(f"Error when walking the directory tree: {e}")
 

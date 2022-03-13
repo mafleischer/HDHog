@@ -244,13 +244,14 @@ class GUI:
         """ create tree view """
 
         columns = ["name", "size"]
+
         self.guitree = GUITree(
             self.catalogue.tree,
             ttk.Treeview(
                 tab_tree, columns=columns, show="tree headings", selectmode="extended"
             ),
         )
-        self.catalogue.tree.registerMirrorTree(self.guitree)
+        self.catalogue.registerMirrorTrees([self.guitree])
 
         self.tv_tree = self.guitree.element
         self.tv_tree.heading("name", text="Name")

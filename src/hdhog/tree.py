@@ -26,7 +26,6 @@ class DataTree(Tree):
         self.root_node = root_node
         self.file_iid = 0  # counter for file iids
         self.dir_iid = 0  # counter for dir iids
-        self.mirror_trees = []
 
     def deleteByIDs(self, iids: Tuple[str]) -> List[CatalogueItem]:
         deleted = []
@@ -185,9 +184,6 @@ class DataTree(Tree):
 
                 yield (parent_di, file_children, [])
 
-                for mirror_tree in self.mirror_trees:
-                    mirror_tree.insertDirItem(parent_di)
-
             # in upper directories subdirectories are roots at first
             else:
                 dir_children = []
@@ -217,12 +213,6 @@ class DataTree(Tree):
 
                 yield (parent_di, file_children, [])
 
-                for mirror_tree in self.mirror_trees:
-                    mirror_tree.insertDirItem(parent_di)
-
             self.dir_iid += 1
 
         self.root_node = list(roots.items())[0][1]
-
-    def registerMirrorTree(self, tree: Tree):
-        self.mirror_trees.append(tree)
