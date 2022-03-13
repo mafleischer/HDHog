@@ -63,7 +63,6 @@ class TestCatalogue(unittest.TestCase):
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
-        print(result_render)
 
         self.assertEqual(render_init, result_render)
 
