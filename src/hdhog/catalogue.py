@@ -1,8 +1,8 @@
-from __future__ import annotations
 import os
 from sortedcontainers import SortedKeyList
 from anytree.search import findall
 from abc import ABC, abstractclassmethod
+from typing import Tuple
 
 from .tree import DataTree
 from .container import CatalogueContainer, FileItem, DirItem

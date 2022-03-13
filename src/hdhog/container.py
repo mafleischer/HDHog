@@ -1,4 +1,3 @@
-from __future__ import annotations
 import os
 from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
@@ -37,10 +36,10 @@ class CatalogueContainer:
     def __getitem__(self, ix):
         return self.container[ix]
 
-    def addItem(self, item: CatalogueItem):
+    def addItem(self, item: "CatalogueItem"):
         self.container.add(item)
 
-    def removeItemByValue(self, item: CatalogueItem):
+    def removeItemByValue(self, item: "CatalogueItem"):
         self.container.remove(item)
 
 
@@ -99,7 +98,7 @@ class DirItem(CatalogueItem):
         dirpath: str,
         name: str,
         file_children: List[FileItem] = [],
-        dir_children: List[DirItem] = [],
+        dir_children: List["DirItem"] = [],
     ):
         super().__init__(iid, dirpath, name)
         self.files = CatalogueContainer()
@@ -113,7 +112,7 @@ class DirItem(CatalogueItem):
             self.setChildren(file_children, dir_children)
 
     def setChildren(
-        self, file_children: List[FileItem] = [], dir_children: List[DirItem] = []
+        self, file_children: List[FileItem] = [], dir_children: List["DirItem"] = []
     ):
         for file_child in file_children:
             file_child.parent = self
