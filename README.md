@@ -10,8 +10,8 @@
 Browse a folder, list files and subfolders **sorted by size accross the directory tree** so that you see the biggest first.
 
 ## About <a name="about"></a>
-One motivation for this tool was to conveniently find big disk space consumers in a folder and
-delete them. To my surprise, there is not really something free out there for this task.
+This tool makes it easy to conveniently clean big disk space consumers by listing big files and folders in a given folder,
+out of which you can then select and delete.
 
 
 Only tested under Linux (Ubuntu) so far, but since all file operations are written generically, theoretically it should work for all OSes that that Python supports and that have Tk, though.
