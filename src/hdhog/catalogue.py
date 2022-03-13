@@ -40,6 +40,7 @@ class Catalogue:
 
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
+        self.tree = DataTree()
 
         logger.info("Start creating catalogue (bottom up).")
 
