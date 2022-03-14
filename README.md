@@ -63,4 +63,3 @@ and run ``hdhog`` in a terminal.
 
 ## Notes <a name="notes"></a>
 - Symlinks are ignored and are not displayed for now
-- At first, focus was only on finding and listing files. The tree view is really not optimal but sufficient for now
