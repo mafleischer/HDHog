@@ -104,7 +104,9 @@ class GUITree(Tree, Treeview):
         dir_size = humanReadableSize(dir_item.size)
 
         if not self.exists(dir_iid):
-            self.insert("", 0, iid=dir_iid, values=(dir_name, dir_size), tags=["dir"])
+            self.insert(
+                "", 0, iid=dir_iid, text=dir_name, values=(dir_size,), tags=["dir"]
+            )
 
         # insert sorted dirs, then sorted files
 
@@ -118,7 +120,9 @@ class GUITree(Tree, Treeview):
             c_iid = child.iid
             c_name = child.name
             c_size = humanReadableSize(child.size)
-            self.insert(dir_iid, END, iid=c_iid, values=(c_name, c_size), tags=["file"])
+            self.insert(
+                dir_iid, END, iid=c_iid, text=c_name, values=(c_size,), tags=["file"]
+            )
 
 
 class GUI:
@@ -247,19 +251,12 @@ class GUI:
 
         """ create tree view """
 
-        columns = ["name", "size"]
-
-        # self.guitree = GUITree(
-        #     self.catalogue.tree,
-        #     Treeview(
-        #         tab_tree, columns=columns, show="tree headings", selectmode="extended"
-        #     ),
-        # )
-        self.guitree = GUITree(self.catalogue.tree, tab_tree, columns=columns)
+        self.guitree = GUITree(self.catalogue.tree, tab_tree, columns=["size"])
         self.catalogue.registerMirrorTrees([self.guitree])
 
         self.tv_tree = self.guitree
-        self.tv_tree.heading("name", text="Name")
+        self.tv_tree.column("size", width=80, minwidth=80, stretch=False)
+        # self.tv_tree.heading("name", text="Name")
         self.tv_tree.heading("size", text="Size")
         self.tv_tree.pack(expand=1, fill="both")
 
