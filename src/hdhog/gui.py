@@ -53,13 +53,21 @@ def humanReadableSize(size: int) -> str:
 
 
 class GUITree(Tree, Treeview):
-    def __init__(self, orig_tree: DataTree, parent_widget, columns, yscrollcommand):
+    def __init__(
+        self,
+        orig_tree: DataTree,
+        parent_widget,
+        columns,
+        xscrollcommand,
+        yscrollcommand,
+    ):
         Treeview.__init__(
             self,
             parent_widget,
             columns=columns,
             show="tree headings",
             selectmode="extended",
+            xscrollcommand=xscrollcommand,
             yscrollcommand=yscrollcommand,
         )
         self.orig_tree = orig_tree
@@ -215,19 +223,24 @@ class GUI:
 
         """ create files view """
 
-        sb = Scrollbar(tab_files, orient="vertical")
-        sb.pack(side=RIGHT, fill="y")
-
         columns = ["name", "size", "dir"]
+
+        sb_v = Scrollbar(tab_files, orient="vertical")
+        sb_v.pack(side=RIGHT, fill="y")
+        sb_h = Scrollbar(tab_files, orient="horizontal")
+        sb_h.pack(side=BOTTOM, fill="x")
+
         self.tv_files = Treeview(
             tab_files,
             columns=columns,
             show="headings",
             selectmode="extended",
-            yscrollcommand=sb.set,
+            xscrollcommand=sb_h.set,
+            yscrollcommand=sb_v.set,
         )
 
-        sb.config(command=self.tv_files.yview)
+        sb_v.config(command=self.tv_files.yview)
+        sb_h.config(command=self.tv_files.xview)
 
         self.tv_files.column("size", width=80, minwidth=80, stretch=False)
         self.tv_files.column("name", width=200, minwidth=200, stretch=False)
@@ -243,19 +256,24 @@ class GUI:
 
         """ create directory view """
 
-        sb = Scrollbar(tab_dirs, orient="vertical")
-        sb.pack(side=RIGHT, fill="y")
-
         columns = ["name", "size", "dir"]
+
+        sb_v = Scrollbar(tab_dirs, orient="vertical")
+        sb_v.pack(side=RIGHT, fill="y")
+        sb_h = Scrollbar(tab_dirs, orient="horizontal")
+        sb_h.pack(side=BOTTOM, fill="x")
+
         self.tv_dirs = Treeview(
             tab_dirs,
             columns=columns,
             show="headings",
             selectmode="extended",
-            yscrollcommand=sb.set,
+            xscrollcommand=sb_h.set,
+            yscrollcommand=sb_v.set,
         )
 
-        sb.config(command=self.tv_dirs.yview)
+        sb_v.config(command=self.tv_dirs.yview)
+        sb_h.config(command=self.tv_dirs.xview)
 
         self.tv_dirs.column("size", width=80, minwidth=80, stretch=False)
         self.tv_dirs.column("name", width=200, minwidth=200, stretch=False)
@@ -271,18 +289,24 @@ class GUI:
 
         """ create tree view """
 
-        sb = Scrollbar(tab_tree, orient="vertical")
-        sb.pack(side=RIGHT, fill="y")
+        sb_v = Scrollbar(tab_tree, orient="vertical")
+        sb_v.pack(side=RIGHT, fill="y")
+        sb_h = Scrollbar(tab_tree, orient="horizontal")
+        sb_h.pack(side=BOTTOM, fill="x")
 
         self.guitree = GUITree(
-            self.catalogue.tree, tab_tree, columns=["size"], yscrollcommand=sb.set
+            self.catalogue.tree,
+            tab_tree,
+            columns=["size"],
+            xscrollcommand=sb_h.set,
+            yscrollcommand=sb_v.set,
         )
 
-        sb.config(command=self.guitree.yview)
+        sb_v.config(command=self.guitree.yview)
+        sb_h.config(command=self.guitree.xview)
 
         self.tv_tree = self.guitree
         self.tv_tree.column("size", width=80, minwidth=80, stretch=False)
-        # self.tv_tree.heading("name", text="Name")
         self.tv_tree.heading("size", text="Size")
         self.tv_tree.pack(expand=1, fill="both")
 

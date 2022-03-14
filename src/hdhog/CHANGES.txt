@@ -1,0 +1,4 @@
+- Fix / improve GUI function: make tree view a proper tree view by passing item names as text= of the Treeview nodes, so indentation of the names is present now
+- Add vertical and horizontal scrollbar to all tabs
+- make tree logic simpler and clearer: remove mirror_trees from DataTree and add it to Catalogue. Catalogue now does operations on all trees separately.
+make GUITree actually an subclass of Treeview as well, instead of having Treeview as attibute of GUITree
