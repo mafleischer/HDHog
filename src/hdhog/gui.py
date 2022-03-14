@@ -1,6 +1,6 @@
 import os
 from tkinter import Tk, Button, Listbox, Entry, Label
-from tkinter.ttk import Treeview, Notebook, Frame
+from tkinter.ttk import Treeview, Notebook, Frame, Scrollbar
 from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
 from tkinter import W
 from tkinter import MULTIPLE
@@ -53,13 +53,14 @@ def humanReadableSize(size: int) -> str:
 
 
 class GUITree(Tree, Treeview):
-    def __init__(self, orig_tree: DataTree, parent_widget, columns):
+    def __init__(self, orig_tree: DataTree, parent_widget, columns, yscrollcommand):
         Treeview.__init__(
             self,
             parent_widget,
             columns=columns,
             show="tree headings",
             selectmode="extended",
+            yscrollcommand=yscrollcommand,
         )
         self.orig_tree = orig_tree
         # self = treeview
@@ -214,10 +215,20 @@ class GUI:
 
         """ create files view """
 
+        sb = Scrollbar(tab_files, orient="vertical")
+        sb.pack(side=RIGHT, fill="y")
+
         columns = ["name", "size", "dir"]
         self.tv_files = Treeview(
-            tab_files, columns=columns, show="headings", selectmode="extended"
+            tab_files,
+            columns=columns,
+            show="headings",
+            selectmode="extended",
+            yscrollcommand=sb.set,
         )
+
+        sb.config(command=self.tv_files.yview)
+
         self.tv_files.column("size", width=80, minwidth=80, stretch=False)
         self.tv_files.column("name", width=200, minwidth=200, stretch=False)
         self.tv_files.column("dir", width=400, stretch=True)
@@ -232,10 +243,19 @@ class GUI:
 
         """ create directory view """
 
+        sb = Scrollbar(tab_dirs, orient="vertical")
+        sb.pack(side=RIGHT, fill="y")
+
         columns = ["name", "size", "dir"]
         self.tv_dirs = Treeview(
-            tab_dirs, columns=columns, show="headings", selectmode="extended"
+            tab_dirs,
+            columns=columns,
+            show="headings",
+            selectmode="extended",
+            yscrollcommand=sb.set,
         )
+
+        sb.config(command=self.tv_dirs.yview)
 
         self.tv_dirs.column("size", width=80, minwidth=80, stretch=False)
         self.tv_dirs.column("name", width=200, minwidth=200, stretch=False)
@@ -251,14 +271,23 @@ class GUI:
 
         """ create tree view """
 
-        self.guitree = GUITree(self.catalogue.tree, tab_tree, columns=["size"])
-        self.catalogue.registerMirrorTrees([self.guitree])
+        sb = Scrollbar(tab_tree, orient="vertical")
+        sb.pack(side=RIGHT, fill="y")
+
+        self.guitree = GUITree(
+            self.catalogue.tree, tab_tree, columns=["size"], yscrollcommand=sb.set
+        )
+
+        sb.config(command=self.guitree.yview)
 
         self.tv_tree = self.guitree
         self.tv_tree.column("size", width=80, minwidth=80, stretch=False)
         # self.tv_tree.heading("name", text="Name")
         self.tv_tree.heading("size", text="Size")
         self.tv_tree.pack(expand=1, fill="both")
+
+        # important
+        self.catalogue.registerMirrorTrees([self.guitree])
 
         """ ### Keybindings ### """
 
