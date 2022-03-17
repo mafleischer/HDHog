@@ -107,7 +107,7 @@ class TestTree(unittest.TestCase):
 
     def testCreateTreeFromFS(self):
         tree = DataTree()
-        for _, _, _ in tree.treeFromFSBottomUp(self.dirtree):
+        for _, _, in tree.treeFromFSBottomUp(self.dirtree):
             pass
 
         self.assertEqual(render_init, renderTreeStr(tree.root_node))

@@ -61,7 +61,11 @@ class TestCatalogue(unittest.TestCase):
                 dirs_sorted[ix][0], catalogue.dirs[ix].getFullPath(),
             )
 
-        # is the tree correct
+        # correct file / dir count ?
+        self.assertEqual(len(self.files_sizes), catalogue.num_files)
+        self.assertEqual(len(self.dirs_sizes), catalogue.num_dirs)
+
+        # is the tree correct ?
         result_render = renderTreeStr(catalogue.tree.root_node)
 
         self.assertEqual(render_init, result_render)
@@ -85,6 +89,9 @@ class TestCatalogue(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             catalogue.files.container.index(del_item)
+
+        # correct file count ?
+        self.assertEqual(len(self.files_sizes) - 1, catalogue.num_files)
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
@@ -110,6 +117,9 @@ class TestCatalogue(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             catalogue.dirs.container.index(del_item)
+
+        # correct dir count ?
+        self.assertEqual(len(self.dirs_sizes) - 1, catalogue.num_dirs)
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)

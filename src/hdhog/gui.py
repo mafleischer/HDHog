@@ -2,9 +2,10 @@ import os
 from tkinter import Tk, Button, Listbox, Entry, Label
 from tkinter.ttk import Treeview, Notebook, Frame, Scrollbar
 from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
-from tkinter import W
+from tkinter import W, NW, SW, SE
+from tkinter import X
 from tkinter import MULTIPLE
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, font
 from math import log
 from typing import List, Tuple
 
@@ -157,14 +158,19 @@ class GUI:
 
         """ ### create right side ### """
 
-        self.frame_right = Frame(self.root, borderwidth=10, height=360, width=200)
-        self.frame_right.pack(side=RIGHT, expand=1, fill="both")
+        self.frame_right = Frame(self.root, borderwidth=10, height=360, width=(w // 4))
+        self.frame_right.pack(side=RIGHT, fill="both")
         self.frame_right.pack_propagate(0)
+
+        # self.frame_counter = Frame(self.frame_right, borderwidth=30, height=200)
+        # self.frame_counter.pack(side=BOTTOM)
+        # self.lbl_counter = Label(self.frame_counter, text="Total count")
+        # self.lbl_counter.pack(side=TOP)
 
         self.lbl_choose_info = Label(
             self.frame_right, text="Start folder:", width=50, anchor=W
         )
-        self.lbl_choose_info.pack(side=TOP)
+        self.lbl_choose_info.pack(side=TOP, pady=(30, 0))
 
         """ Folder entry """
 
@@ -179,13 +185,35 @@ class GUI:
             width=50,
             command=self.btnChooseFolder,
         )
-        self.button_choose_folder.pack(side=TOP, pady=10)
+        self.button_choose_folder.pack(side=TOP, pady=15)
 
         """ Button walk and list directory in folder entry """
         self.button_list = Button(
             self.frame_right, text="List", width=50, command=self.bntList,
         )
         self.button_list.pack(side=TOP)
+
+        """ Total count info """
+
+        self.frame_counter = Frame(
+            self.frame_right, borderwidth=2, height=200, relief="groove"
+        )
+        self.frame_counter.pack(side=TOP, pady=30)
+
+        self.lbl_count_title = Label(
+            self.frame_counter, text="Total number of files and subfolders", width=40
+        )
+        self.lbl_count_title.pack(side=TOP, pady=10)
+
+        txt_files = Label(self.frame_counter, text="Files:")
+        txt_files.pack(side=LEFT, anchor=SW, padx=(30, 5), pady=10)
+        self.lbl_file_counter = Label(self.frame_counter, text="0", font="Arial 9 bold")
+        self.lbl_file_counter.pack(side=LEFT, anchor=SW, pady=10)
+
+        self.lbl_dir_counter = Label(self.frame_counter, text="0", font="Arial 9 bold")
+        self.lbl_dir_counter.pack(side=RIGHT, anchor=SE, padx=(0, 30), pady=10)
+        txt_dirs = Label(self.frame_counter, text="Folders:")
+        txt_dirs.pack(side=RIGHT, anchor=SE, padx=(0, 5), pady=10)
 
         """ button delete selection """
 
@@ -195,7 +223,7 @@ class GUI:
             width=50,
             command=self.btnDeleteSelected,
         )
-        self.button_delete_selected.pack(side=TOP, pady=50)
+        self.button_delete_selected.pack(side=TOP, pady=20)
 
         """ quit button """
 
@@ -206,7 +234,9 @@ class GUI:
 
         """ ### create left side ### """
 
-        self.frame_left = Frame(self.root, borderwidth=10, height=360, width=350)
+        self.frame_left = Frame(
+            self.root, borderwidth=10, height=360, width=int(w * 3 / 4)
+        )
         self.frame_left.pack(side=LEFT, expand=1, fill="both")
         self.frame_left.pack_propagate(0)
 
@@ -348,6 +378,9 @@ class GUI:
             self.delDirs()
             self.listDirs()
 
+            self._setFileCountTxt()
+            self._setDirCountTxt()
+
     def btnDeleteSelected(self):
         tab = self.tabs.tab(self.tabs.select(), "text")
 
@@ -382,6 +415,9 @@ class GUI:
         self.delDirs()
         self.listDirs()
 
+        self._setFileCountTxt()
+        self._setDirCountTxt()
+
     def delFiles(self):
         items = self.tv_files.get_children()
         for iid in items:
@@ -411,3 +447,10 @@ class GUI:
             self.tv_dirs.insert(
                 "", END, iid=iid, values=(name, size, parent), tags=["dir"]
             )
+
+    def _setFileCountTxt(self):
+        self.lbl_file_counter.config(text=str(self.catalogue.num_files))
+
+    def _setDirCountTxt(self):
+        self.lbl_dir_counter.config(text=str(self.catalogue.num_dirs))
+

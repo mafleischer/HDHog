@@ -134,6 +134,12 @@ class DataTree(Tree):
 
         Args:
             start (str, optional): Start of the walk..
+
+        Raises:
+            oserror: when os.walk fails
+
+        Yields:
+            Tuple[DirItem, List[FileItem]]: A parent DirItem and its file children
         """
 
         roots = {}
@@ -182,7 +188,7 @@ class DataTree(Tree):
                 )
                 roots[parent] = parent_di
 
-                yield (parent_di, file_children, [])
+                yield (parent_di, file_children)
 
             # in upper directories subdirectories are roots at first
             else:
@@ -211,7 +217,7 @@ class DataTree(Tree):
 
                 roots[parent] = parent_di
 
-                yield (parent_di, file_children, [])
+                yield (parent_di, file_children)
 
             self.dir_iid += 1
 

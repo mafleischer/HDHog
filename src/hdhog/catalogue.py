@@ -29,6 +29,8 @@ class Catalogue:
         self.dirs = CatalogueContainer()
         self.tree = DataTree()
         self.mirror_trees = []
+        self.num_files = 0
+        self.num_dirs = 0
         self.hash_files = hash_files
 
     def registerMirrorTrees(self, trees: List[Tree]):
@@ -44,18 +46,21 @@ class Catalogue:
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
         self.tree = DataTree()
+        self.num_files = 0
+        self.num_dirs = 0
 
         logger.info("Start creating catalogue (bottom up).")
 
         try:
-            for parent_item, file_items, dir_items in self.tree.treeFromFSBottomUp(
-                start=start
-            ):
+            for parent_item, file_items in self.tree.treeFromFSBottomUp(start=start):
+                self.num_dirs += 1
+                self.num_files += len(file_items)
+
                 self.dirs.addItem(parent_item)
                 for item in file_items:
                     self.files.addItem(item)
-                for item in dir_items:
-                    self.dirs.addItem(item)
+                # for item in dir_items:
+                #     self.dirs.addItem(item)
 
                 for tree in self.mirror_trees:
                     tree.insertDirItem(parent_item)
@@ -102,10 +107,12 @@ class Catalogue:
             if isinstance(item, FileItem):
                 logger.debug(f"Removing {item} from file list.")
                 self.files.removeItemByValue(item)
+                self.num_files -= 1
 
             if isinstance(item, DirItem):
                 logger.debug(f"Removing {item} from dir list.")
                 self.dirs.removeItemByValue(item)
+                self.num_dirs -= 1
 
             fs_action = FSActionDelete()
             fs_action.execute(item)
