@@ -133,6 +133,13 @@ class GUITree(Tree, Treeview):
                 dir_iid, END, iid=c_iid, text=c_name, values=(c_size,), tags=["file"]
             )
 
+    def getRootIID(self) -> str:
+        ch = self.get_children()
+        if ch:
+            return ch[0]
+        else:
+            return ""
+
 
 class GUI:
     def __init__(self):
@@ -342,6 +349,9 @@ class GUI:
                 title="Invalid Folder", message="Folder does not exist!"
             )
         else:
+            gui_root = self.guitree.getRootIID()
+            if gui_root:
+                self.guitree.delete(gui_root)
             self.catalogue.createCatalogue(start=startdir)
             self.delFiles()
             self.listFiles()
