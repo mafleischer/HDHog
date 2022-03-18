@@ -59,11 +59,11 @@ class Catalogue:
                 self.dirs.addItem(parent_item)
                 for item in file_items:
                     self.files.addItem(item)
-                # for item in dir_items:
-                #     self.dirs.addItem(item)
-
                 for tree in self.mirror_trees:
                     tree.insertDirItem(parent_item)
+
+            # minus top dir
+            self.num_dirs -= 1
 
         except Exception as e:
             logger.error(f"Error when walking the directory tree: {e}")
