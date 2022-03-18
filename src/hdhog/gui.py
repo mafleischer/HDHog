@@ -165,7 +165,9 @@ class GUI:
 
         """ ### create right side ### """
 
-        self.frame_right = Frame(self.root, borderwidth=10, height=360, width=(w // 4))
+        right_frame_w = w // 4
+
+        self.frame_right = Frame(self.root, borderwidth=10, width=right_frame_w)
         self.frame_right.pack(side=RIGHT, fill="both")
         self.frame_right.pack_propagate(0)
 
@@ -202,25 +204,30 @@ class GUI:
 
         """ Total count info """
 
-        self.frame_counter = Frame(
+        frame_counter = Frame(
             self.frame_right, borderwidth=2, height=200, relief="groove"
         )
-        self.frame_counter.pack(side=TOP, pady=30)
+        frame_counter.pack(side=TOP, pady=30)
 
-        self.lbl_count_title = Label(
-            self.frame_counter, text="Total number of files and subfolders", width=40
-        )
-        self.lbl_count_title.pack(side=TOP, pady=10)
+        self.lbl_count_title = Label(frame_counter, text="Total number")
+        self.lbl_count_title.pack(side=TOP, pady=(10, 20))
 
-        txt_files = Label(self.frame_counter, text="Files:")
-        txt_files.pack(side=LEFT, anchor=SW, padx=(30, 5), pady=10)
-        self.lbl_file_counter = Label(self.frame_counter, text="0", font="Arial 9 bold")
-        self.lbl_file_counter.pack(side=LEFT, anchor=SW, pady=10)
+        padding_2_frame = 10
 
-        self.lbl_dir_counter = Label(self.frame_counter, text="0", font="Arial 9 bold")
-        self.lbl_dir_counter.pack(side=RIGHT, anchor=SE, padx=(0, 30), pady=10)
-        txt_dirs = Label(self.frame_counter, text="Folders:")
-        txt_dirs.pack(side=RIGHT, anchor=SE, padx=(0, 5), pady=10)
+        frame_fcount = Frame(frame_counter)
+        frame_fcount.pack(side=BOTTOM, anchor=W, padx=padding_2_frame)
+        frame_dcount = Frame(frame_counter)
+        frame_dcount.pack(side=BOTTOM, anchor=W, padx=padding_2_frame)
+
+        self.lbl_dir_counter = Label(frame_dcount, text="0", font="Arial 9 bold")
+        self.lbl_dir_counter.pack(side=RIGHT, pady=10, padx=(5, 5))
+        txt_dirs = Label(frame_dcount, text="Folders:", width=10)
+        txt_dirs.pack(side=LEFT, pady=10)
+
+        self.lbl_file_counter = Label(frame_fcount, text="0", font="Arial 9 bold")
+        self.lbl_file_counter.pack(side=RIGHT, pady=10, padx=(5, 5))
+        txt_files = Label(frame_fcount, text="Files:", width=10)
+        txt_files.pack(side=LEFT, pady=10)
 
         """ button delete selection """
 
@@ -241,8 +248,10 @@ class GUI:
 
         """ ### create left side ### """
 
+        left_frame_w = w - right_frame_w
+
         self.frame_left = Frame(
-            self.root, borderwidth=10, height=360, width=int(w * 3 / 4)
+            self.root, borderwidth=10, height=360, width=left_frame_w
         )
         self.frame_left.pack(side=LEFT, expand=1, fill="both")
         self.frame_left.pack_propagate(0)
@@ -254,7 +263,7 @@ class GUI:
         tab_dirs = Frame(self.tabs)
         tab_tree = Frame(self.tabs)
         self.tabs.add(tab_files, text="Files")
-        self.tabs.add(tab_dirs, text="Directories")
+        self.tabs.add(tab_dirs, text="Folders")
         self.tabs.add(tab_tree, text="Tree View")
         self.tabs.pack(expand=1, fill="both")
 
@@ -398,7 +407,7 @@ class GUI:
             selection = self.tv_files.selection()
             for iid in selection:
                 self.tv_files.delete(iid)
-        elif tab == "Directories":
+        elif tab == "Folders":
             selection = self.tv_dirs.selection()
             for iid in selection:
                 self.tv_dirs.delete(iid)
