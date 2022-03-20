@@ -98,7 +98,7 @@ class Catalogue:
             fs_action (Action): Action object
             paths (List[str]): full paths to files or dirs
         """
-        items = self.tree.deleteByIDs(selection)
+        items = self.tree.deleteByIDs(selection, self.files, self.dirs)
 
         for item in items:
 
@@ -117,7 +117,7 @@ class Catalogue:
             fs_action = FSActionDelete()
             fs_action.execute(item)
 
-        logger.info(f"Removed {len(items)} from catalogue and disk.")
+        logger.info(f"Removed {len(items)} item from catalogue and disk.")
 
 
 # class FilterCheck(ABC):

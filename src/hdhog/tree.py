@@ -3,7 +3,7 @@ from anytree.search import findall, find_by_attr
 from abc import ABC, abstractclassmethod
 from typing import Tuple, List, Optional
 
-from .container import CatalogueItem, FileItem, DirItem
+from .container import CatalogueContainer, CatalogueItem, FileItem, DirItem
 from .logger import logger
 
 
@@ -27,26 +27,38 @@ class DataTree(Tree):
         self.file_iid = 0  # counter for file iids
         self.dir_iid = 0  # counter for dir iids
 
-    def deleteByIDs(self, iids: Tuple[str]) -> List[CatalogueItem]:
+    def deleteByIDs(
+        self,
+        iids: Tuple[str],
+        file_container: CatalogueContainer,
+        dir_container: CatalogueContainer,
+    ) -> List[CatalogueItem]:
         deleted = []
         logger.debug(f"Deleting iids {iids} from tree.")
         for iid in sorted(iids):
             node = find_by_attr(self.root_node, iid, name="iid")
             if node:
                 deleted.append(node)
-                self.deleteSubtree(node)
+                self.deleteSubtree(node, file_container, dir_container)
         logger.debug(f"Deleted items {deleted} and children from tree.")
         return deleted
 
-    def deleteSubtree(self, node: CatalogueItem):
+    def deleteSubtree(
+        self,
+        node: CatalogueItem,
+        file_container: CatalogueContainer,
+        dir_container: CatalogueContainer,
+    ):
         logger.debug(f"Detaching node {node}.")
         if node.children:
             logger.debug(f"Detaching all children of {node}")
             for file_item in node.files:
+                file_container.removeItemByValue(file_item)
                 file_item.parent = None
             for dir_item in node.dirs:
                 if dir_item.dirs:
                     self.deleteSubtree(dir_item)
+                    dir_container.removeItemByValue(dir_item)
                 else:
                     dir_item.parent = None
 
