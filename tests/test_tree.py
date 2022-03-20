@@ -10,7 +10,7 @@ from utils import (
 )
 
 from hdhog.tree import DataTree
-from hdhog.container import CatalogueItem, DirItem, FileItem
+from hdhog.container import CatalogueContainer, CatalogueItem, DirItem, FileItem
 
 
 def createSimpleTree():
@@ -29,7 +29,17 @@ def createSimpleTree():
     node_4.setChildren(file_children=[node_5])
     node_2.setChildren(file_children=[node_3], dir_children=[node_4])
     node_0.setChildren(file_children=[node_1], dir_children=[node_2])
-    return node_0
+
+    # containers as in Catalogue.files and Catalogue.dirs
+    file_container = CatalogueContainer()
+    dir_container = CatalogueContainer()
+
+    for f_item in (node_1, node_3, node_5):
+        file_container.addItem(f_item)
+    for d_item in (node_0, node_2, node_4):
+        dir_container.addItem(d_item)
+
+    return node_0, file_container, dir_container
 
 
 class TestTree(unittest.TestCase):
@@ -44,7 +54,7 @@ class TestTree(unittest.TestCase):
     def testCreateManualTree(self):
         """ Quick check if dummy tree is correct"""
 
-        root = createSimpleTree()
+        root, _, _ = createSimpleTree()
         true_init_tree = """d0    200000    /bla/d0
 ├── f0    100000    /bla/d0/f0
 └── d1    100000    /bla/d0/d1
@@ -56,14 +66,14 @@ class TestTree(unittest.TestCase):
         self.assertEqual(true_init_tree, renderTreeStr(root))
 
     def testdeleteFileNode(self):
-        root = createSimpleTree()
+        root, file_container, dir_container = createSimpleTree()
         tree = DataTree(root)
         del_iid = "f1"
 
         node = find_by_attr(root, del_iid, name="iid")
         parent = node.parent
 
-        tree.deleteByIDs((del_iid,))
+        tree.deleteByIDs((del_iid,), file_container, dir_container)
         self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
 
         with self.assertRaises(ValueError):
@@ -81,14 +91,14 @@ class TestTree(unittest.TestCase):
         self.assertEqual(true_del_tree, renderTreeStr(root))
 
     def testdeleteDirNode(self):
-        root = createSimpleTree()
+        root, file_container, dir_container = createSimpleTree()
         tree = DataTree(root)
         del_iid = "d2"
 
         node = find_by_attr(root, del_iid, name="iid")
         parent = node.parent
 
-        tree.deleteByIDs((del_iid,))
+        tree.deleteByIDs((del_iid,), file_container, dir_container)
         self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
 
         with self.assertRaises(ValueError):

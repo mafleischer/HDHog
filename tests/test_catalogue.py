@@ -13,6 +13,7 @@ from utils import (
 )
 
 from hdhog.catalogue import Catalogue
+from hdhog.container import DirItem, FileItem
 
 unittest.TestLoader.sortTestMethodsUsing = None
 
@@ -102,7 +103,7 @@ class TestCatalogue(unittest.TestCase):
         catalogue.deleteByIDs((del_iid,))
 
         path = del_item.getFullPath()
-        self.assertFalse(os.path.isfile(path))
+        self.assertFalse(os.path.isdir(path))
 
         self.assertEqual(
             None, find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
@@ -110,6 +111,14 @@ class TestCatalogue(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             catalogue.dirs.container.index(del_item)
+
+        for child in del_item.children:
+            if isinstance(child, DirItem):
+                with self.assertRaises(ValueError):
+                    catalogue.dirs.container.index(child)
+            if isinstance(child, FileItem):
+                with self.assertRaises(ValueError):
+                    catalogue.files.container.index(child)
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
