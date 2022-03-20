@@ -1,2 +1,4 @@
 Bugfixes:
-    when listing new directory delete GUI tree
+    - reference to original DataTree was lost do to rebinding in __init__ of GUITree
+    remove attribute orig_tree and instead pass the DataTree as param to GUITree methods
+    - make sure children of items are deleted from Catalogue.files and .dirs as well

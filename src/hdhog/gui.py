@@ -54,12 +54,7 @@ def humanReadableSize(size: int) -> str:
 
 class GUITree(Tree, Treeview):
     def __init__(
-        self,
-        orig_tree: DataTree,
-        parent_widget,
-        columns,
-        xscrollcommand,
-        yscrollcommand,
+        self, parent_widget, columns, xscrollcommand, yscrollcommand,
     ):
         Treeview.__init__(
             self,
@@ -70,15 +65,13 @@ class GUITree(Tree, Treeview):
             xscrollcommand=xscrollcommand,
             yscrollcommand=yscrollcommand,
         )
-        self.orig_tree = orig_tree
-        # self = treeview
         self.tag_configure("file", background=item_colors["file"])
         self.tag_configure("dir", background=item_colors["dir"])
 
-    def deleteByIDs(self, iids: Tuple[str]):
+    def deleteByIDs(self, iids: Tuple[str], data_tree: DataTree):
         logger.debug(f"Deleting iids {iids}.")
         for iid in iids:
-            item = self.orig_tree.findByID(iid)
+            item = data_tree.findByID(iid)
             if item:
                 size = item.size
             else:
@@ -87,18 +80,18 @@ class GUITree(Tree, Treeview):
             parent = self.parent(iid)
             if parent:
                 update = -size
-                self.updateAncestorsSize(iid, update)
+                self.updateAncestorsSize(iid, update, data_tree)
 
             self.deleteSubtree(iid)
 
     def deleteSubtree(self, iid: str):
         self.delete(iid)
 
-    def updateAncestorsSize(self, item_iid: str, update: int):
+    def updateAncestorsSize(self, item_iid: str, update: int, data_tree: DataTree):
         parent = self.parent(item_iid)
         while parent:
             name = self.item(parent)["values"][0]
-            item = self.orig_tree.findByID(parent)
+            item = data_tree.findByID(parent)
             if item:
                 size = item.size
             else:
@@ -302,7 +295,6 @@ class GUI:
         sb_h.pack(side=BOTTOM, fill="x")
 
         self.guitree = GUITree(
-            self.catalogue.tree,
             tab_tree,
             columns=["size"],
             xscrollcommand=sb_h.set,
@@ -374,15 +366,14 @@ class GUI:
 
         logger.info(f"Deleting selection from tab {tab}.")
 
-        self.guitree.deleteByIDs(selection)
+        self.guitree.deleteByIDs(selection, self.catalogue.tree)
 
         # in case an item has been deleted on disk by the user / os
         try:
             self.catalogue.deleteByIDs(selection)
         except FileNotFoundError as fne:
-            messagebox.showerror(
-                title="Not found",
-                message=f"Cannot delete item since it does not seem to exist anymore: {fne}",
+            logger.error(
+                f"Cannot delete item since it does not seem to exist anymore: {fne}"
             )
 
         # completely deleting an resinserting is for simplicity
