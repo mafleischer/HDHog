@@ -13,7 +13,7 @@ from .catalogue import Catalogue, DirItem
 from .tree import Tree, DataTree
 from .logger import logger
 
-item_colors = {"file": "#FFF0D9", "dir": "#D7F4F3"}  # Papaya Whip, Water
+item_colors = {"file": "#fcfade", "dir": "#D7F4F3"}  # Cornsilk, Water
 
 
 def humanReadableSize(size: int) -> str:
