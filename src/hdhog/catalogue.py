@@ -98,7 +98,7 @@ class Catalogue:
             fs_action (Action): Action object
             paths (List[str]): full paths to files or dirs
         """
-        items = self.tree.deleteByIDs(selection, self.files, self.dirs)
+        items = self.tree.deleteByIDs(selection)
 
         for item in items:
 
@@ -106,12 +106,20 @@ class Catalogue:
 
             if isinstance(item, FileItem):
                 logger.debug(f"Removing {item} from file list.")
-                self.files.removeItemByValue(item)
+                try:
+                    self.files.removeItemByValue(item)
+                except ValueError as ve:
+                    logger.error(f"Error removing item from file container: {ve}")
+
                 self.num_files -= 1
 
             if isinstance(item, DirItem):
                 logger.debug(f"Removing {item} from dir list.")
-                self.dirs.removeItemByValue(item)
+                try:
+                    self.dirs.removeItemByValue(item)
+                except ValueError as ve:
+                    logger.error(f"Error removing item from dir container: {ve}")
+
                 self.num_dirs -= 1
 
             fs_action = FSActionDelete()
