@@ -10,7 +10,7 @@ from math import log
 from typing import List, Tuple
 
 from .catalogue import Catalogue, DirItem
-from .tree import Tree, DataTree
+from .tree import Tree, FSTree
 from .logger import logger
 
 item_colors = {"file": "#fcfade", "dir": "#D7F4F3"}  # Cornsilk, Water
@@ -30,7 +30,7 @@ def humanReadableSize(size: int) -> str:
     """
     size_suffixes = ["K", "M", "G", "T"]
 
-    if size == 0:
+    if size <= 0:
         return "0"
 
     logger.debug(f"Calculating h.r. size for bytes: {size}.")
@@ -69,37 +69,31 @@ class GUITree(Tree, Treeview):
         self.tag_configure("file", background=item_colors["file"])
         self.tag_configure("dir", background=item_colors["dir"])
 
-    def deleteByIDs(self, iids: Tuple[str], data_tree: DataTree):
-        logger.debug(f"Deleting iids {iids}.")
-        for iid in iids:
-            item = data_tree.findByID(iid)
-            if item:
-                size = item.size
-            else:
-                continue
+    # def deleteByIDs(self, iids: Tuple[str]):
+    #     logger.debug(f"Deleting iids {iids}.")
+    #     for iid in iids:
+    #         item = data_tree.findByID(iid)
+    #         if item:
+    #             new_size = item.size
+    #             self.updateAncestors(iid, data_tree)
+    #         else:
+    #             continue
 
-            parent = self.parent(iid)
-            if parent:
-                update = -size
-                self.updateAncestorsSize(iid, update, data_tree)
+    #         # parent = self.parent(iid)
+    #         # if parent:
+    #         self.deleteSubtree(iid)
 
-            self.deleteSubtree(iid)
+    def deleteSubtree(self, item):
+        self.delete(item.iid)
 
-    def deleteSubtree(self, iid: str):
-        self.delete(iid)
-
-    def updateAncestorsSize(self, item_iid: str, update: int, data_tree: DataTree):
-        parent = self.parent(item_iid)
-        while parent:
-            name = self.item(parent)["values"][0]
-            item = data_tree.findByID(parent)
-            if item:
-                size = item.size
-            else:
-                continue
-            new_hr_size = humanReadableSize(size + update)
-            self.item(parent, values=(name, new_hr_size))
-            parent = self.parent(parent)
+    def updateAncestors(self, item):
+        parent_iid = self.parent(item.iid)
+        parent_item = item.parent
+        while parent_iid:
+            new_hr_size = humanReadableSize(parent_item.size)
+            self.item(parent_iid, values=(new_hr_size,))
+            parent_iid = self.parent(parent_iid)
+            parent_item = item.parent
 
     def insertDirItem(self, dir_item: DirItem):
         dir_iid = dir_item.iid
@@ -408,8 +402,6 @@ class GUI:
 
         logger.info(f"Deleting selection from tab {tab}.")
 
-        self.guitree.deleteByIDs(selection, self.catalogue.tree)
-
         # in case an item has been deleted on disk by the user / os
         try:
             self.catalogue.deleteByIDs(selection)
@@ -417,6 +409,8 @@ class GUI:
             logger.error(
                 f"Cannot delete item since it does not seem to exist anymore: {fne}"
             )
+
+        # self.guitree.deleteByIDs(selection, self.catalogue.tree)
 
         # completely deleting an resinserting is for simplicity
         # right now and will be changed

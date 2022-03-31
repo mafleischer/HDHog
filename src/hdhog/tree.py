@@ -8,63 +8,91 @@ from .logger import logger
 
 
 class Tree(ABC):
-    @abstractclassmethod
-    def deleteByIDs(self, iids: Tuple[str]) -> CatalogueItem:
-        pass
+    # @abstractclassmethod
+    # def deleteByIDs(self, iids: Tuple[str]) -> CatalogueItem:
+    #     pass
 
     @abstractclassmethod
     def deleteSubtree(self, node: CatalogueItem):
         pass
 
     @abstractclassmethod
-    def updateAncestorsSize(node: CatalogueItem):
+    def updateAncestors(node: CatalogueItem):
         pass
 
 
-class DataTree(Tree):
+class FSTree(Tree):
     def __init__(self, root_node: CatalogueItem = None):
         self.root_node = root_node
         self.file_iid = 0  # counter for file iids
         self.dir_iid = 0  # counter for dir iids
 
-    def deleteByIDs(
-        self,
-        iids: Tuple[str],
-        file_container: CatalogueContainer,
-        dir_container: CatalogueContainer,
-    ) -> List[CatalogueItem]:
-        deleted = []
-        logger.debug(f"Deleting iids {iids} from tree.")
-        for iid in sorted(iids):
-            node = find_by_attr(self.root_node, iid, name="iid")
-            if node:
-                deleted.append(node)
-                self.deleteSubtree(node, file_container, dir_container)
-        logger.debug(f"Deleted items {deleted} and children from tree.")
-        return deleted
-
     def deleteSubtree(
         self,
         node: CatalogueItem,
-        file_container: CatalogueContainer,
-        dir_container: CatalogueContainer,
+        file_list: CatalogueContainer,
+        dir_list: CatalogueContainer,
+        replicate_op_on: List[Tree],
     ):
-        logger.debug(f"Detaching node {node}.")
+        del_items = []
+        logger.debug(f"Children of node {node}:  {list(node.children)}")
         if node.children:
             logger.debug(f"Detaching all children of {node}")
+            logger.debug(f"File children: {list(node.files)}")
             for file_item in node.files:
-                file_container.removeItemByValue(file_item)
+                logger.debug(f"Detaching file child {file_item}")
                 file_item.parent = None
+
+                logger.debug(f"Removing {file_item} from file list.")
+                try:
+                    file_list.removeItemByValue(file_item)
+                except ValueError as ve:
+                    logger.error(f"Error removing item from file container: {ve}")
+
+            logger.debug(f"Dir children: {list(node.dirs)}")
+
             for dir_item in node.dirs:
-                if dir_item.dirs:
-                    self.deleteSubtree(dir_item)
-                    dir_container.removeItemByValue(dir_item)
-                else:
-                    dir_item.parent = None
+                logger.debug(f"Detaching dir child {dir_item}")
+                # if dir_item.dirs or dir_item.files:
+                #     # del_items.extend(self.deleteSubtree(dir_item))
+                self.deleteSubtree(dir_item, file_list, dir_list, replicate_op_on)
+
+                dir_item.parent = None
+
+                logger.debug(f"Removing {dir_item} from dir list.")
+                try:
+                    dir_list.removeItemByValue(dir_item)
+                except ValueError as ve:
+                    logger.error(f"Error removing item from dir container: {ve}")
+
+        if isinstance(node, FileItem):
+            file_list.removeItemByValue(node)
+        if isinstance(node, DirItem):
+            dir_list.removeItemByValue(node)
+
+            # del_items.extend(node.files)
+            # del_items.extend(node.dirs)
+
+        logger.debug(f"Detaching node {node}.")
+
+        # del_items.append(node)
 
         self.rmNodeFromParent(node)
-        self.updateAncestorsSize(node)
+        self.updateAncestors(node, dir_list)
+
+        logger.debug(f"File list: {list(file_list)}")
+        logger.debug(f"Dir list: {list(dir_list)}")
+
+        logger.debug(f"Children of node {node}:  {list(node.children)}")
+
+        for tree in replicate_op_on:
+            update = node.size
+            tree.updateAncestors(node)
+            tree.deleteSubtree(node)
+
         node.parent = None
+
+        return node.getSize()
 
     def rmNodeFromParent(self, node: CatalogueItem):
         """Remove a node from all of its parent's structures
@@ -75,16 +103,23 @@ class DataTree(Tree):
         if node.parent:
             logger.debug(f"Remove node {node} from parent structures.")
             p_children = [ch for ch in node.parent.children if ch != node]
+            logger.debug(f"New children of parent {node.parent}: {p_children}")
             node.parent.children = tuple(p_children)
+
+            logger.debug(
+                f"Parent dirs_files of node {node}: {list(node.parent.dirs_files)}"
+            )
 
             node.parent.dirs_files.removeItemByValue(node)
 
-            if node in node.parent.files:
+            if isinstance(node, FileItem):
                 node.parent.files.removeItemByValue(node)
-            else:
+            if isinstance(node, DirItem):
                 node.parent.dirs.removeItemByValue(node)
 
-    def updateAncestorsSize(self, node: CatalogueItem):
+    def updateAncestors(
+        self, node: CatalogueItem, dir_list: CatalogueContainer,
+    ):
         """Update sizes of all ancestors of a node that has already been removed
         from parent's structures
 
@@ -94,8 +129,36 @@ class DataTree(Tree):
         logger.debug(f"Update ancestors of {node}")
         parent = node.parent
         while parent:
-            logger.debug(f"Updating size of ancestor {parent}.")
-            parent.calcSetDirSize()
+            logger.debug(
+                f"Updating size of ancestor {parent}. Current size {parent.size}"
+            )
+
+            try:
+                dir_list.removeItemByValue(parent)
+            except ValueError as ve:
+                logger.error(f"Error removing item from dir container: {ve}")
+
+            grand_parent = parent.parent
+
+            if grand_parent:
+
+                logger.debug(f"Remove / reinsert {parent} in {grand_parent}")
+
+                grand_parent.dirs_files.removeItemByValue(parent)
+                grand_parent.dirs.removeItemByValue(parent)
+
+                parent.calcSetDirSize()
+
+                grand_parent.dirs.addItem(parent)
+                grand_parent.dirs_files.addItem(parent)
+
+            else:
+                parent.calcSetDirSize()
+                logger.debug(f"No grand parent for {node}")
+
+            dir_list.addItem(parent)
+
+            node = parent
             parent = parent.parent
 
     def findByID(self, iid: str) -> Optional[CatalogueItem]:

@@ -1,6 +1,7 @@
 import os
 from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
+from abc import ABC, abstractclassmethod
 from typing import List
 
 from .logger import logger
@@ -43,7 +44,7 @@ class CatalogueContainer:
         self.container.remove(item)
 
 
-class CatalogueItem(NodeMixin):
+class CatalogueItem(NodeMixin, ABC):
     """This is the AB class for an item held in the catalogue
     container. It's an anytree node as well.
 
@@ -64,6 +65,10 @@ class CatalogueItem(NodeMixin):
     def __repr__(self):
         return self.getFullPath()
 
+    @abstractclassmethod
+    def getSize():
+        pass
+
     def getFullPath(self) -> str:
         return os.path.join(self.dirpath, self.name)
 
@@ -77,6 +82,9 @@ class FileItem(CatalogueItem):
 
     def setFileType(self, dirpath: str, name: str):
         self.type = os.path.splitext(self.name)[1]
+
+    def getSize(self):
+        return self.size
 
 
 class DirItem(CatalogueItem):
@@ -131,12 +139,17 @@ class DirItem(CatalogueItem):
 
         self.calcSetDirSize()
 
+    def getSize(self):
+        sum_size = 0
+        sum_size += sum([child.size for child in self.children])
+        return sum_size
+
     def calcSetDirSize(self):
         """Calculate size from all direct children and set it.
         """
-        logger.debug(f"Update size of {self}, old size: {self.size}.")
+        # logger.debug(f"Update size of {self}, old size: {self.size}.")
 
         sum_size = 0
         sum_size += sum([child.size for child in self.children])
         self.size = sum_size
-        logger.debug(f"Update size of {self}, new size: {self.size}.")
+        # logger.debug(f"Update size of {self}, new size: {self.size}.")

@@ -14,6 +14,7 @@ from utils import (
 
 from hdhog.catalogue import Catalogue
 from hdhog.container import DirItem, FileItem
+from hdhog.logger import logger
 
 unittest.TestLoader.sortTestMethodsUsing = None
 
@@ -64,7 +65,7 @@ class TestCatalogue(unittest.TestCase):
 
         # correct file / dir count ?
         self.assertEqual(len(self.files_sizes), catalogue.num_files)
-        self.assertEqual(len(self.dirs_sizes), catalogue.num_dirs)
+        self.assertEqual(len(self.dirs_sizes) - 1, catalogue.num_dirs)
 
         # is the tree correct ?
         result_render = renderTreeStr(catalogue.tree.root_node)
@@ -78,6 +79,8 @@ class TestCatalogue(unittest.TestCase):
         del_iid = "F0"
 
         del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
+
+        logger.info(f"Deleting file {del_item.getFullPath()}")
 
         catalogue.deleteByIDs((del_iid,))
 
@@ -107,6 +110,8 @@ class TestCatalogue(unittest.TestCase):
 
         del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
 
+        logger.info(f"Deleting dir {del_item.getFullPath()}")
+
         catalogue.deleteByIDs((del_iid,))
 
         path = del_item.getFullPath()
@@ -120,7 +125,7 @@ class TestCatalogue(unittest.TestCase):
             catalogue.dirs.container.index(del_item)
 
         # correct dir count ?
-        self.assertEqual(len(self.dirs_sizes) - 1, catalogue.num_dirs)
+        self.assertEqual(len(self.dirs_sizes) - 2, catalogue.num_dirs)
 
         # children removed? ; need to expand recursively
         for child in del_item.children:

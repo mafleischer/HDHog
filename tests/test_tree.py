@@ -9,7 +9,7 @@ from utils import (
     render_del_dir,
 )
 
-from hdhog.tree import DataTree
+from hdhog.tree import FSTree
 from hdhog.container import CatalogueContainer, CatalogueItem, DirItem, FileItem
 
 
@@ -67,13 +67,20 @@ class TestTree(unittest.TestCase):
 
     def testdeleteFileNode(self):
         root, file_container, dir_container = createSimpleTree()
-        tree = DataTree(root)
+        tree = FSTree(root)
         del_iid = "f1"
 
         node = find_by_attr(root, del_iid, name="iid")
         parent = node.parent
 
-        tree.deleteByIDs((del_iid,), file_container, dir_container)
+        try:
+            tree.deleteSubtree(node, file_container, dir_container, [])
+        except FileNotFoundError:
+            # exception thrown by file / dir delete
+            # OK, since here only abstract functionality of
+            # the tree is tested
+            pass
+
         self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
 
         with self.assertRaises(ValueError):
@@ -92,13 +99,19 @@ class TestTree(unittest.TestCase):
 
     def testdeleteDirNode(self):
         root, file_container, dir_container = createSimpleTree()
-        tree = DataTree(root)
+        tree = FSTree(root)
         del_iid = "d2"
 
         node = find_by_attr(root, del_iid, name="iid")
         parent = node.parent
+        try:
+            tree.deleteSubtree(node, file_container, dir_container, [])
+        except FileNotFoundError:
+            # exception thrown by file / dir delete
+            # OK, since here only abstract functionality of
+            # the tree is tested
+            pass
 
-        tree.deleteByIDs((del_iid,), file_container, dir_container)
         self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
 
         with self.assertRaises(ValueError):
@@ -116,7 +129,7 @@ class TestTree(unittest.TestCase):
         self.assertEqual(true_del_tree, renderTreeStr(root))
 
     def testCreateTreeFromFS(self):
-        tree = DataTree()
+        tree = FSTree()
         for _, _, in tree.treeFromFSBottomUp(self.dirtree):
             pass
 

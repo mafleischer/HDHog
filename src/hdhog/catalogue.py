@@ -1,10 +1,8 @@
-import os
-from sortedcontainers import SortedKeyList
 from anytree.search import findall
 from abc import ABC, abstractclassmethod
 from typing import Tuple, List
 
-from .tree import Tree, DataTree
+from .tree import Tree, FSTree
 from .container import CatalogueContainer, FileItem, DirItem
 from .fsaction import FSActionDelete
 from .logger import logger
@@ -17,7 +15,7 @@ class Catalogue:
         1. A CatalogueContainer for files, which is just for file-based sorting
         2. A CatalogueContainer for directories, which is just for
         directory-based sorting
-        3. The DataTree. Nodes in the tree are
+        3. The FSTree. Nodes in the tree are
         FileItems or DirItems which inherit from anytree's NodeMixin.
         Each node in turn holds CatalogueContainers for holding children
         items.
@@ -25,9 +23,11 @@ class Catalogue:
 
     def __init__(self, hash_files=False):
         # self.filter_checks = []
+        # self.files = CatalogueContainer()
+        # self.dirs = CatalogueContainer()
+        self.tree = FSTree()
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
-        self.tree = DataTree()
         self.mirror_trees = []
         self.num_files = 0
         self.num_dirs = 0
@@ -45,7 +45,7 @@ class Catalogue:
 
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
-        self.tree = DataTree()
+        self.tree = FSTree()
         self.num_files = 0
         self.num_dirs = 0
 
@@ -98,34 +98,27 @@ class Catalogue:
             fs_action (Action): Action object
             paths (List[str]): full paths to files or dirs
         """
-        items = self.tree.deleteByIDs(selection)
+        deleted = []
+        logger.debug(f"Deleting iids {selection} from tree.")
+        # reverse, so greates iids are deleted first which potentially deletes
+        # smaller iids in the list if they are their children
+        for iid in sorted(selection, reverse=True):
+            item = self.tree.findByID(f"{iid}")
 
-        for item in items:
+            if item:
+                freed_size = self.tree.deleteSubtree(
+                    item, self.files, self.dirs, self.mirror_trees
+                )
+                logger.debug(f"Freed {freed_size} bytes in tree.")
 
-            logger.debug(f"Deleting item {item}.")
+                fs_action = FSActionDelete()
+                fs_action.execute(item)
 
-            if isinstance(item, FileItem):
-                logger.debug(f"Removing {item} from file list.")
-                try:
-                    self.files.removeItemByValue(item)
-                except ValueError as ve:
-                    logger.error(f"Error removing item from file container: {ve}")
+        self.num_files = len(self.files)
+        self.num_dirs = len(self.dirs) - 1
 
-                self.num_files -= 1
-
-            if isinstance(item, DirItem):
-                logger.debug(f"Removing {item} from dir list.")
-                try:
-                    self.dirs.removeItemByValue(item)
-                except ValueError as ve:
-                    logger.error(f"Error removing item from dir container: {ve}")
-
-                self.num_dirs -= 1
-
-            fs_action = FSActionDelete()
-            fs_action.execute(item)
-
-        logger.info(f"Removed {len(items)} item from catalogue and disk.")
+        logger.debug(f"File list: {list(self.files)}")
+        logger.debug(f"Dirs list: {list(self.dirs)}")
 
 
 # class FilterCheck(ABC):
