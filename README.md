@@ -10,7 +10,7 @@
 Browse a folder, list files and subfolders **sorted by size accross the directory tree** so that you see the biggest first.
 
 ## About <a name="about"></a>
-This tool makes it easy to conveniently clean big disk space consumers by listing big files and folders in a given folder,
+Free disk space. This tool makes it easy to conveniently clean big disk space consumers by listing big files and subfolders in a given folder,
 out of which you can then select and delete.
 
 
@@ -38,6 +38,9 @@ cd HDHog
 pip3 install ./
 ```
 and run ``hdhog`` in a terminal.
+
+
+Choose a folder to list. In either view you can select and delete items.
 
 ## Screenshots <a name="screenshots"></a>
 
