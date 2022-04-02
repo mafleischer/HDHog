@@ -63,9 +63,10 @@ class TestCatalogue(unittest.TestCase):
                 dirs_sorted[ix][0], catalogue.dirs[ix].getFullPath(),
             )
 
-        # correct file / dir count ?
+        # correct file / dir count / total space?
         self.assertEqual(len(self.files_sizes), catalogue.num_files)
         self.assertEqual(len(self.dirs_sizes) - 1, catalogue.num_dirs)
+        self.assertEqual(sum(self.files_sizes.values()), catalogue.total_space)
 
         # is the tree correct ?
         result_render = renderTreeStr(catalogue.tree.root_node)
@@ -85,6 +86,8 @@ class TestCatalogue(unittest.TestCase):
         catalogue.deleteByIDs((del_iid,))
 
         path = del_item.getFullPath()
+        self.dirs_sizes[f"{os.path.dirname(path)}/"] -= del_item.size
+
         self.assertFalse(os.path.isfile(path))
 
         self.assertEqual(
@@ -94,8 +97,11 @@ class TestCatalogue(unittest.TestCase):
         with self.assertRaises(ValueError):
             catalogue.files.container.index(del_item)
 
-        # correct file count ?
+        # correct file count / total space ?
         self.assertEqual(len(self.files_sizes) - 1, catalogue.num_files)
+
+        del_files_sizes = {f: size for f, size in self.files_sizes.items() if f != path}
+        self.assertEqual(sum(del_files_sizes.values()), catalogue.total_space)
 
         # is the tree correct
         result_render = renderTreeStr(catalogue.tree.root_node)
@@ -109,6 +115,7 @@ class TestCatalogue(unittest.TestCase):
         del_iid = "D0"
 
         del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
+        old_space = catalogue.total_space
 
         logger.info(f"Deleting dir {del_item.getFullPath()}")
 
@@ -124,8 +131,9 @@ class TestCatalogue(unittest.TestCase):
         with self.assertRaises(ValueError):
             catalogue.dirs.container.index(del_item)
 
-        # correct dir count ?
+        # correct dir count / total space?
         self.assertEqual(len(self.dirs_sizes) - 2, catalogue.num_dirs)
+        self.assertEqual(old_space - self.dirs_sizes[path], catalogue.total_space)
 
         # children removed? ; need to expand recursively
         for child in del_item.children:
