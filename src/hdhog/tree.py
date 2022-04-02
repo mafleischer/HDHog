@@ -176,7 +176,7 @@ class FSTree(Tree):
                     logger.error(f"Error removing item from file container: {ve}")
 
             for dir_item in node.dirs:
-                self.deleteSubtree(dir_item, file_list, dir_list, replicate_op_on)
+                self.deleteSubtree(dir_item, file_list, dir_list, repeat_trees)
 
                 dir_item.parent = None
 
