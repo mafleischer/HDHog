@@ -1,16 +1,14 @@
 import os
-from tkinter import Tk, Button, Listbox, Entry, Label
+from tkinter import Tk, Button, Entry, Label
 from tkinter.ttk import Treeview, Notebook, Frame, Scrollbar
 from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
-from tkinter import W, NW, SW, SE
-from tkinter import X
-from tkinter import MULTIPLE
-from tkinter import filedialog, messagebox, font
+from tkinter import W
+from tkinter import filedialog, messagebox
 from math import log
-from typing import List, Tuple
 
-from .catalogue import Catalogue, DirItem
-from .tree import Tree, FSTree
+from .catalogue import Catalogue
+from .container import DirItem
+from .tree import Tree
 from .logger import logger
 
 item_colors = {"file": "#fcfade", "dir": "#D7F4F3"}  # Cornsilk, Water
@@ -402,15 +400,7 @@ class GUI:
 
         logger.info(f"Deleting selection from tab {tab}.")
 
-        # in case an item has been deleted on disk by the user / os
-        try:
-            self.catalogue.deleteByIDs(selection)
-        except FileNotFoundError as fne:
-            logger.error(
-                f"Cannot delete item since it does not seem to exist anymore: {fne}"
-            )
-
-        # self.guitree.deleteByIDs(selection, self.catalogue.tree)
+        self.catalogue.deleteByIDs(selection)
 
         # completely deleting an resinserting is for simplicity
         # right now and will be changed
@@ -457,4 +447,3 @@ class GUI:
 
     def _setDirCountTxt(self):
         self.lbl_dir_counter.config(text=str(self.catalogue.num_dirs))
-

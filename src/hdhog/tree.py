@@ -1,17 +1,13 @@
 import os
-from anytree.search import findall, find_by_attr
+from anytree.search import find_by_attr
 from abc import ABC, abstractclassmethod
-from typing import Tuple, List, Optional
+from typing import List, Optional
 
 from .container import CatalogueContainer, CatalogueItem, FileItem, DirItem
 from .logger import logger
 
 
 class Tree(ABC):
-    # @abstractclassmethod
-    # def deleteByIDs(self, iids: Tuple[str]) -> CatalogueItem:
-    #     pass
-
     @abstractclassmethod
     def deleteSubtree(self, node: CatalogueItem):
         pass
@@ -26,155 +22,6 @@ class FSTree(Tree):
         self.root_node = root_node
         self.file_iid = 0  # counter for file iids
         self.dir_iid = 0  # counter for dir iids
-
-    def deleteSubtree(
-        self,
-        node: CatalogueItem,
-        file_list: CatalogueContainer,
-        dir_list: CatalogueContainer,
-        replicate_op_on: List[Tree],
-    ):
-        del_items = []
-        logger.debug(f"Children of node {node}:  {list(node.children)}")
-        if node.children:
-            logger.debug(f"Detaching all children of {node}")
-            logger.debug(f"File children: {list(node.files)}")
-            for file_item in node.files:
-                logger.debug(f"Detaching file child {file_item}")
-                file_item.parent = None
-
-                logger.debug(f"Removing {file_item} from file list.")
-                try:
-                    file_list.removeItemByValue(file_item)
-                except ValueError as ve:
-                    logger.error(f"Error removing item from file container: {ve}")
-
-            logger.debug(f"Dir children: {list(node.dirs)}")
-
-            for dir_item in node.dirs:
-                logger.debug(f"Detaching dir child {dir_item}")
-                # if dir_item.dirs or dir_item.files:
-                #     # del_items.extend(self.deleteSubtree(dir_item))
-                self.deleteSubtree(dir_item, file_list, dir_list, replicate_op_on)
-
-                dir_item.parent = None
-
-                logger.debug(f"Removing {dir_item} from dir list.")
-                try:
-                    dir_list.removeItemByValue(dir_item)
-                except ValueError as ve:
-                    logger.error(f"Error removing item from dir container: {ve}")
-
-        if isinstance(node, FileItem):
-            file_list.removeItemByValue(node)
-        if isinstance(node, DirItem):
-            dir_list.removeItemByValue(node)
-
-            # del_items.extend(node.files)
-            # del_items.extend(node.dirs)
-
-        logger.debug(f"Detaching node {node}.")
-
-        # del_items.append(node)
-
-        self.rmNodeFromParent(node)
-        self.updateAncestors(node, dir_list)
-
-        logger.debug(f"File list: {list(file_list)}")
-        logger.debug(f"Dir list: {list(dir_list)}")
-
-        logger.debug(f"Children of node {node}:  {list(node.children)}")
-
-        for tree in replicate_op_on:
-            update = node.size
-            tree.updateAncestors(node)
-            tree.deleteSubtree(node)
-
-        node.parent = None
-
-        return node.getSize()
-
-    def rmNodeFromParent(self, node: CatalogueItem):
-        """Remove a node from all of its parent's structures
-
-        Args:
-            node (CatalogueItem): To-be-remove-node
-        """
-        if node.parent:
-            logger.debug(f"Remove node {node} from parent structures.")
-            p_children = [ch for ch in node.parent.children if ch != node]
-            logger.debug(f"New children of parent {node.parent}: {p_children}")
-            node.parent.children = tuple(p_children)
-
-            logger.debug(
-                f"Parent dirs_files of node {node}: {list(node.parent.dirs_files)}"
-            )
-
-            node.parent.dirs_files.removeItemByValue(node)
-
-            if isinstance(node, FileItem):
-                node.parent.files.removeItemByValue(node)
-            if isinstance(node, DirItem):
-                node.parent.dirs.removeItemByValue(node)
-
-    def updateAncestors(
-        self, node: CatalogueItem, dir_list: CatalogueContainer,
-    ):
-        """Update sizes of all ancestors of a node that has already been removed
-        from parent's structures
-
-        Args:
-            node (CatalogueItem): removed node
-        """
-        logger.debug(f"Update ancestors of {node}")
-        parent = node.parent
-        while parent:
-            logger.debug(
-                f"Updating size of ancestor {parent}. Current size {parent.size}"
-            )
-
-            try:
-                dir_list.removeItemByValue(parent)
-            except ValueError as ve:
-                logger.error(f"Error removing item from dir container: {ve}")
-
-            grand_parent = parent.parent
-
-            if grand_parent:
-
-                logger.debug(f"Remove / reinsert {parent} in {grand_parent}")
-
-                grand_parent.dirs_files.removeItemByValue(parent)
-                grand_parent.dirs.removeItemByValue(parent)
-
-                parent.calcSetDirSize()
-
-                grand_parent.dirs.addItem(parent)
-                grand_parent.dirs_files.addItem(parent)
-
-            else:
-                parent.calcSetDirSize()
-                logger.debug(f"No grand parent for {node}")
-
-            dir_list.addItem(parent)
-
-            node = parent
-            parent = parent.parent
-
-    def findByID(self, iid: str) -> Optional[CatalogueItem]:
-        """Find node by its iid string and return it.
-
-        Args:
-            iid (str): iid
-
-        Returns:
-            Optional[CatalogueItem]: item or None
-        """
-        item = find_by_attr(self.root_node, iid, name="iid")
-        if item:
-            return item
-        else:
-            return None
 
     def treeFromFSBottomUp(self, start):
         """Generator that walks the directory tree and builds the tree from the items.
@@ -204,7 +51,7 @@ class FSTree(Tree):
 
         The algorithm terminates with setting the topmost directory as the root
         item / node.
-  
+
         Symlinks are skipped.
 
         Args:
@@ -297,3 +144,141 @@ class FSTree(Tree):
             self.dir_iid += 1
 
         self.root_node = list(roots.items())[0][1]
+
+    def deleteSubtree(
+        self,
+        node: CatalogueItem,
+        file_list: CatalogueContainer,
+        dir_list: CatalogueContainer,
+        repeat_trees: List[Tree],
+    ):
+        """Recursively delete a tree with a given root <node> and remove the
+        root from the global file or directory list.
+
+        Repeat the operation on additional trees in list. Currently only used
+        for GUI tree element.
+
+        Args:
+            node (CatalogueItem): a given node
+            file_list (CatalogueContainer): global file list of Catalogue object
+            dir_list (CatalogueContainer): global directory list of Catalogue object
+            repeat_trees (List[Tree]): trees on which the operation is repeated
+        """
+        if node.children:
+            logger.debug(f"Detaching all children of {node}")
+            for file_item in node.files:
+                file_item.parent = None
+
+                logger.debug(f"Removing {file_item} from file list.")
+                try:
+                    file_list.removeItemByValue(file_item)
+                except ValueError as ve:
+                    logger.error(f"Error removing item from file container: {ve}")
+
+            for dir_item in node.dirs:
+                self.deleteSubtree(dir_item, file_list, dir_list, replicate_op_on)
+
+                dir_item.parent = None
+
+                logger.debug(f"Removing {dir_item} from dir list.")
+                try:
+                    dir_list.removeItemByValue(dir_item)
+                except ValueError as ve:
+                    logger.error(f"Error removing item from dir container: {ve}")
+
+        if isinstance(node, FileItem):
+            file_list.removeItemByValue(node)
+        if isinstance(node, DirItem):
+            dir_list.removeItemByValue(node)
+
+        self.rmNodeFromParent(node)
+        self.updateAncestors(node, dir_list)
+
+        for tree in repeat_trees:
+            tree.updateAncestors(node)
+            tree.deleteSubtree(node)
+
+        node.parent = None
+
+    def rmNodeFromParent(self, node: CatalogueItem):
+        """Remove a node from all of its parent's structures
+
+        Args:
+            node (CatalogueItem): To-be-remove-node
+        """
+        if node.parent:
+            logger.debug(f"Remove node {node} from parent structures.")
+            p_children = [ch for ch in node.parent.children if ch != node]
+            node.parent.children = tuple(p_children)
+
+            node.parent.dirs_files.removeItemByValue(node)
+
+            if isinstance(node, FileItem):
+                node.parent.files.removeItemByValue(node)
+            if isinstance(node, DirItem):
+                node.parent.dirs.removeItemByValue(node)
+
+    def updateAncestors(
+        self, node: CatalogueItem, dir_list: CatalogueContainer,
+    ):
+        """Update sizes of all ancestors of a node that has already been removed
+        from parent's structures. Update ancestors in global directory list.
+
+        Since in the underlying sorted list in the container objects references are kept,
+        updating an item takes removing it, then updating the
+        item and then inserting it againg. Updating it when the object
+        is still in the list leads to the reference in the list not
+        representing the new object, so new object cannot be found
+        in the list.
+
+        Args:
+            node (CatalogueItem): removed node
+            dir_list (CatalogueContainer): global directory list
+        """
+        logger.debug(f"Update ancestors of {node}")
+        parent = node.parent
+        while parent:
+            logger.debug(
+                f"Updating size of ancestor {parent}. Current size {parent.size}"
+            )
+
+            try:
+                dir_list.removeItemByValue(parent)
+            except ValueError as ve:
+                logger.error(f"Error removing item from dir container: {ve}")
+
+            grand_parent = parent.parent
+
+            if grand_parent:
+
+                grand_parent.dirs_files.removeItemByValue(parent)
+                grand_parent.dirs.removeItemByValue(parent)
+
+                parent.calcSetDirSize()
+
+                grand_parent.dirs.addItem(parent)
+                grand_parent.dirs_files.addItem(parent)
+
+            else:
+                parent.calcSetDirSize()
+                logger.debug(f"No grand parent for {node}")
+
+            dir_list.addItem(parent)
+
+            node = parent
+            parent = parent.parent
+
+    def findByID(self, iid: str) -> Optional[CatalogueItem]:
+        """Find node by its iid string and return it.
+
+        Args:
+            iid (str): iid
+
+        Returns:
+            Optional[CatalogueItem]: item or None
+        """
+        item = find_by_attr(self.root_node, iid, name="iid")
+        if item:
+            return item
+        else:
+            return None

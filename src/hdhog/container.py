@@ -147,9 +147,6 @@ class DirItem(CatalogueItem):
     def calcSetDirSize(self):
         """Calculate size from all direct children and set it.
         """
-        # logger.debug(f"Update size of {self}, old size: {self.size}.")
-
         sum_size = 0
         sum_size += sum([child.size for child in self.children])
         self.size = sum_size
-        # logger.debug(f"Update size of {self}, new size: {self.size}.")

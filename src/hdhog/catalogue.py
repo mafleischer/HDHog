@@ -1,9 +1,7 @@
-from anytree.search import findall
-from abc import ABC, abstractclassmethod
 from typing import Tuple, List
 
 from .tree import Tree, FSTree
-from .container import CatalogueContainer, FileItem, DirItem
+from .container import CatalogueContainer
 from .fsaction import FSActionDelete
 from .logger import logger
 
@@ -98,27 +96,30 @@ class Catalogue:
             fs_action (Action): Action object
             paths (List[str]): full paths to files or dirs
         """
-        deleted = []
         logger.debug(f"Deleting iids {selection} from tree.")
-        # reverse, so greates iids are deleted first which potentially deletes
+        # reverse sort, so greatest iids, i.e. "oldest ancestors"
+        # are deleted first which potentially deletes
         # smaller iids in the list if they are their children
+        # and also guaranteeing that ancestors are not updated multiple
+        # times by their descendants (e.g. by a file and then by it's parent
+        # folder)
         for iid in sorted(selection, reverse=True):
             item = self.tree.findByID(f"{iid}")
 
             if item:
-                freed_size = self.tree.deleteSubtree(
-                    item, self.files, self.dirs, self.mirror_trees
-                )
-                logger.debug(f"Freed {freed_size} bytes in tree.")
+                self.tree.deleteSubtree(item, self.files, self.dirs, self.mirror_trees)
 
-                fs_action = FSActionDelete()
-                fs_action.execute(item)
+                # in case an item has been deleted on disk by the user / os
+                try:
+                    fs_action = FSActionDelete()
+                    fs_action.execute(item)
+                except FileNotFoundError as fne:
+                    logger.error(
+                        f"Cannot delete item since it does not seem to exist anymore: {fne}"
+                    )
 
         self.num_files = len(self.files)
-        self.num_dirs = len(self.dirs) - 1
-
-        logger.debug(f"File list: {list(self.files)}")
-        logger.debug(f"Dirs list: {list(self.dirs)}")
+        self.num_dirs = len(self.dirs) - 1  # minus top dir
 
 
 # class FilterCheck(ABC):
