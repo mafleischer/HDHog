@@ -1,4 +1,10 @@
+- simplify code structure a bit, remove a function
+
+Features:
+    - Add a label that show total file and folder count as well as total used space of
+    the start directory
+
 Bugfixes:
-    - reference to original DataTree was lost do to rebinding in __init__ of GUITree
-    remove attribute orig_tree and instead pass the DataTree as param to GUITree methods
-    - make sure children of items are deleted from Catalogue.files and .dirs as well
+    - deletion of items from the global item containers
+    - with that size update of directories in global dir container
+    - childless nodes deletion from global item lists
