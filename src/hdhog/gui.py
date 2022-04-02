@@ -67,20 +67,6 @@ class GUITree(Tree, Treeview):
         self.tag_configure("file", background=item_colors["file"])
         self.tag_configure("dir", background=item_colors["dir"])
 
-    # def deleteByIDs(self, iids: Tuple[str]):
-    #     logger.debug(f"Deleting iids {iids}.")
-    #     for iid in iids:
-    #         item = data_tree.findByID(iid)
-    #         if item:
-    #             new_size = item.size
-    #             self.updateAncestors(iid, data_tree)
-    #         else:
-    #             continue
-
-    #         # parent = self.parent(iid)
-    #         # if parent:
-    #         self.deleteSubtree(iid)
-
     def deleteSubtree(self, item):
         self.delete(item.iid)
 
