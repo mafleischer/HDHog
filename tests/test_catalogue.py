@@ -86,7 +86,7 @@ class TestCatalogue(unittest.TestCase):
         catalogue.deleteByIDs((del_iid,))
 
         path = del_item.getFullPath()
-        self.dirs_sizes[f"{os.path.dirname(path)}/"] -= del_item.size
+        self.dirs_sizes[f"{os.path.dirname(path)}{os.path.sep}"] -= del_item.size
 
         self.assertFalse(os.path.isfile(path))
 
