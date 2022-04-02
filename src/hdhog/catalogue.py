@@ -29,6 +29,7 @@ class Catalogue:
         self.mirror_trees = []
         self.num_files = 0
         self.num_dirs = 0
+        self.total_space = 0
         self.hash_files = hash_files
 
     def registerMirrorTrees(self, trees: List[Tree]):
@@ -46,6 +47,7 @@ class Catalogue:
         self.tree = FSTree()
         self.num_files = 0
         self.num_dirs = 0
+        self.total_space = 0
 
         logger.info("Start creating catalogue (bottom up).")
 
@@ -65,6 +67,8 @@ class Catalogue:
 
         except Exception as e:
             logger.error(f"Error when walking the directory tree: {e}")
+
+        self.total_space = self.tree.root_node.size
 
         logger.info("Finished creating catalogue.")
 
@@ -120,6 +124,10 @@ class Catalogue:
 
         self.num_files = len(self.files)
         self.num_dirs = len(self.dirs) - 1  # minus top dir
+        if self.tree.root_node:
+            self.total_space = self.tree.root_node.size
+        else:
+            self.total_space = 0
 
 
 # class FilterCheck(ABC):

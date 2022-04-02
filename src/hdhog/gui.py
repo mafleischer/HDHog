@@ -180,25 +180,32 @@ class GUI:
         )
         frame_counter.pack(side=TOP, pady=30)
 
-        self.lbl_count_title = Label(frame_counter, text="Total number")
+        self.lbl_count_title = Label(frame_counter, text="Total numbers")
         self.lbl_count_title.pack(side=TOP, pady=(10, 20))
 
         padding_2_frame = 10
 
+        frame_usedspace = Frame(frame_counter)
+        frame_usedspace.pack(side=BOTTOM, anchor=W, padx=padding_2_frame)
         frame_fcount = Frame(frame_counter)
         frame_fcount.pack(side=BOTTOM, anchor=W, padx=padding_2_frame)
         frame_dcount = Frame(frame_counter)
         frame_dcount.pack(side=BOTTOM, anchor=W, padx=padding_2_frame)
 
+        self.lbl_usedspace = Label(frame_usedspace, text="0", font="Arial 9 bold")
+        self.lbl_usedspace.pack(side=RIGHT, pady=5, padx=(5, 5))
+        txt_dirs = Label(frame_usedspace, text="Used space:", width=10)
+        txt_dirs.pack(side=LEFT, pady=5)
+
         self.lbl_dir_counter = Label(frame_dcount, text="0", font="Arial 9 bold")
-        self.lbl_dir_counter.pack(side=RIGHT, pady=10, padx=(5, 5))
+        self.lbl_dir_counter.pack(side=RIGHT, pady=5, padx=(5, 5))
         txt_dirs = Label(frame_dcount, text="Folders:", width=10)
-        txt_dirs.pack(side=LEFT, pady=10)
+        txt_dirs.pack(side=LEFT, pady=5)
 
         self.lbl_file_counter = Label(frame_fcount, text="0", font="Arial 9 bold")
-        self.lbl_file_counter.pack(side=RIGHT, pady=10, padx=(5, 5))
+        self.lbl_file_counter.pack(side=RIGHT, pady=5, padx=(5, 5))
         txt_files = Label(frame_fcount, text="Files:", width=10)
-        txt_files.pack(side=LEFT, pady=10)
+        txt_files.pack(side=LEFT, pady=5)
 
         """ button delete selection """
 
@@ -369,6 +376,7 @@ class GUI:
 
             self._setFileCountTxt()
             self._setDirCountTxt()
+            self._setUsedSpace()
 
     def btnDeleteSelected(self):
         tab = self.tabs.tab(self.tabs.select(), "text")
@@ -397,6 +405,7 @@ class GUI:
 
         self._setFileCountTxt()
         self._setDirCountTxt()
+        self._setUsedSpace()
 
     def delFiles(self):
         items = self.tv_files.get_children()
@@ -433,3 +442,7 @@ class GUI:
 
     def _setDirCountTxt(self):
         self.lbl_dir_counter.config(text=str(self.catalogue.num_dirs))
+
+    def _setUsedSpace(self):
+        hr_total_size = humanReadableSize(self.catalogue.total_space)
+        self.lbl_usedspace.config(text=hr_total_size)
