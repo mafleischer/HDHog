@@ -12,34 +12,24 @@ from utils import (
 from hdhog.gui import GUI, humanReadableSize
 
 
-class TestGUI(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
-        cls.gui = GUI()
+def testFilesDirsList(test_catalogue):
+    dirtree, dirs_sizes, files_sizes = test_catalogue
+    gui = GUI()
+    gui.startdir_entry.insert(0, dirtree)
+    gui.bntList()
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.dirtree)
+    len_files = len(gui.tv_files.get_children(0))
+    assert len_files == len(files_sizes)
 
-    def testFilesDirsList(self):
-        self.gui.startdir_entry.insert(0, self.dirtree)
-        self.gui.bntList()
-
-        len_files = len(self.gui.tv_files.get_children(0))
-        self.assertEqual(len(self.files_sizes), len_files)
-
-        len_dirs = len(self.gui.tv_dirs.get_children(0))
-        self.assertEqual(len(self.dirs_sizes), len_dirs)
-
-    def testHumanReadableSize(self):
-        self.assertEqual(str(0), humanReadableSize(0))
-        self.assertEqual(str(200), humanReadableSize(200))
-        self.assertEqual("1.1K", humanReadableSize(1100))
-        self.assertEqual("5.5M", humanReadableSize(5500000))
-        self.assertEqual("60M", humanReadableSize(60000000))
-        self.assertEqual("70G", humanReadableSize(70000000000))
+    len_dirs = len(gui.tv_dirs.get_children(0))
+    assert len_dirs == len(dirs_sizes)
 
 
-if __name__ == "__main__":
-    unittest.main()
+def testHumanReadableSize(test_catalogue):
+    dirtree, dirs_sizes, files_sizes = test_catalogue
+    assert humanReadableSize(0) == str(0)
+    assert humanReadableSize(200) == str(200)
+    assert humanReadableSize(1100) == "1.1K"
+    assert humanReadableSize(5500000) == "5.5M"
+    assert humanReadableSize(60000000) == "60M"
+    assert humanReadableSize(70000000000) == "70G"

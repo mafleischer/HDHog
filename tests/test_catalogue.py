@@ -1,4 +1,5 @@
 import os
+import pytest
 import sys
 import shutil
 import unittest
@@ -16,139 +17,124 @@ from hdhog.catalogue import Catalogue
 from hdhog.container import DirItem, FileItem
 from hdhog.logger import logger
 
-unittest.TestLoader.sortTestMethodsUsing = None
+
+def testCreateCatalogue(test_catalogue):
+
+    dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
+
+    catalogue = Catalogue(hash_files=False)
+    catalogue.createCatalogue(start=dirtree)
+
+    # all files and dirs in catalogue?
+    assert len(catalogue.files) == len(files_and_sizes)
+    assert len(catalogue.dirs) == len(dirs_and_sizes)
+
+    # quick IDs check
+    file_ids = sorted([item.iid for item in catalogue.files])
+    dir_ids = sorted([item.iid for item in catalogue.dirs])
+
+    file_ids_expected = sorted([f"F{iid}" for iid in list(range(0, len(file_ids)))])
+    assert file_ids == file_ids_expected
+
+    dir_ids_expected = sorted([f"D{iid}" for iid in list(range(0, len(dir_ids)))])
+    assert dir_ids == dir_ids_expected
+
+    # sorting by size works?
+    files_sorted = sorted(files_and_sizes.items(), key=lambda tup: tup[1], reverse=True)
+
+    for ix, item in enumerate(catalogue.files):
+        assert catalogue.files[ix].getFullPath() == files_sorted[ix][0]
+
+    dirs_sorted = sorted(dirs_and_sizes.items(), key=lambda tup: tup[1], reverse=True)
+
+    for ix, item in enumerate(catalogue.dirs):
+        assert catalogue.dirs[ix].getFullPath() == dirs_sorted[ix][0]
+
+    # correct file / dir count / total space?
+    assert catalogue.num_files == len(files_and_sizes)
+    assert catalogue.num_dirs == len(dirs_and_sizes) - 1
+    assert catalogue.total_space == sum(files_and_sizes.values())
+
+    # # is the tree correct ?
+    result_render = renderTreeStr(catalogue.tree.root_node)
+    assert result_render == render_init
 
 
-class TestCatalogue(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
+def testDeleteFile(test_catalogue):
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.dirtree)
+    dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
 
-    def test0CreateCatalogue(self):
-        catalogue = Catalogue(hash_files=False)
-        catalogue.createCatalogue(start=self.dirtree)
+    catalogue = Catalogue(hash_files=False)
+    catalogue.createCatalogue(start=dirtree)
 
-        # all files and dirs in catalogue?
-        self.assertEqual(len(self.files_sizes), len(catalogue.files))
-        self.assertEqual(len(self.dirs_sizes), len(catalogue.dirs))
+    del_iid = "F0"
 
-        # quick IDs check
-        f_ids = sorted([item.iid for item in catalogue.files])
-        d_ids = sorted([item.iid for item in catalogue.dirs])
-        f_ids_true = sorted([f"F{iid}" for iid in list(range(0, len(f_ids)))])
-        self.assertEqual(f_ids_true, f_ids)
-        d_ids_true = sorted([f"D{iid}" for iid in list(range(0, len(d_ids)))])
-        self.assertEqual(d_ids_true, d_ids)
+    del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
 
-        # sorting by size works?
-        files_sorted = sorted(
-            self.files_sizes.items(), key=lambda tup: tup[1], reverse=True
-        )
+    logger.info(f"Deleting file {del_item.getFullPath()}")
 
-        for ix, item in enumerate(catalogue.files):
-            self.assertEqual(
-                files_sorted[ix][0], catalogue.files[ix].getFullPath(),
-            )
+    catalogue.deleteByIDs((del_iid,))
 
-        dirs_sorted = sorted(
-            self.dirs_sizes.items(), key=lambda tup: tup[1], reverse=True
-        )
+    path = del_item.getFullPath()
+    dirs_and_sizes[f"{os.path.dirname(path)}{os.path.sep}"] -= del_item.size
 
-        for ix, item in enumerate(catalogue.dirs):
-            self.assertEqual(
-                dirs_sorted[ix][0], catalogue.dirs[ix].getFullPath(),
-            )
+    assert os.path.isfile(path) is False
 
-        # correct file / dir count / total space?
-        self.assertEqual(len(self.files_sizes), catalogue.num_files)
-        self.assertEqual(len(self.dirs_sizes) - 1, catalogue.num_dirs)
-        self.assertEqual(sum(self.files_sizes.values()), catalogue.total_space)
+    assert find_by_attr(catalogue.tree.root_node, del_iid, name="iid") is None
 
-        # is the tree correct ?
-        result_render = renderTreeStr(catalogue.tree.root_node)
+    with pytest.raises(ValueError):
+        catalogue.files.container.index(del_item)
 
-        self.assertEqual(render_init, result_render)
+    # correct file count / total space ?
+    assert catalogue.num_files == len(files_and_sizes) - 1
 
-    def test1DeleteFile(self):
-        catalogue = Catalogue(hash_files=False)
-        catalogue.createCatalogue(start=self.dirtree)
+    del_files_sizes = {f: size for f, size in files_and_sizes.items() if f != path}
+    assert catalogue.total_space == sum(del_files_sizes.values())
 
-        del_iid = "F0"
+    # is the tree correct
+    result_render = renderTreeStr(catalogue.tree.root_node)
 
-        del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
-
-        logger.info(f"Deleting file {del_item.getFullPath()}")
-
-        catalogue.deleteByIDs((del_iid,))
-
-        path = del_item.getFullPath()
-        self.dirs_sizes[f"{os.path.dirname(path)}{os.path.sep}"] -= del_item.size
-
-        self.assertFalse(os.path.isfile(path))
-
-        self.assertEqual(
-            None, find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
-        )
-
-        with self.assertRaises(ValueError):
-            catalogue.files.container.index(del_item)
-
-        # correct file count / total space ?
-        self.assertEqual(len(self.files_sizes) - 1, catalogue.num_files)
-
-        del_files_sizes = {f: size for f, size in self.files_sizes.items() if f != path}
-        self.assertEqual(sum(del_files_sizes.values()), catalogue.total_space)
-
-        # is the tree correct
-        result_render = renderTreeStr(catalogue.tree.root_node)
-
-        self.assertEqual(render_del_file, result_render)
-
-    def test2DeleteDir(self):
-        catalogue = Catalogue(hash_files=False)
-        catalogue.createCatalogue(start=self.dirtree)
-
-        del_iid = "D0"
-
-        del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
-        old_space = catalogue.total_space
-
-        logger.info(f"Deleting dir {del_item.getFullPath()}")
-
-        catalogue.deleteByIDs((del_iid,))
-
-        path = del_item.getFullPath()
-        self.assertFalse(os.path.isdir(path))
-
-        self.assertEqual(
-            None, find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
-        )
-
-        with self.assertRaises(ValueError):
-            catalogue.dirs.container.index(del_item)
-
-        # correct dir count / total space?
-        self.assertEqual(len(self.dirs_sizes) - 2, catalogue.num_dirs)
-        self.assertEqual(old_space - self.dirs_sizes[path], catalogue.total_space)
-
-        # children removed? ; need to expand recursively
-        for child in del_item.children:
-            if isinstance(child, DirItem):
-                with self.assertRaises(ValueError):
-                    catalogue.dirs.container.index(child)
-            if isinstance(child, FileItem):
-                with self.assertRaises(ValueError):
-                    catalogue.files.container.index(child)
-
-        # is the tree correct
-        result_render = renderTreeStr(catalogue.tree.root_node)
-
-        self.assertEqual(render_del_dir, result_render)
+    assert result_render == render_del_file
 
 
-if __name__ == "__main__":
-    unittest.main()
+def testDeleteDir(test_catalogue):
+
+    dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
+
+    catalogue = Catalogue(hash_files=False)
+    catalogue.createCatalogue(start=dirtree)
+
+    del_iid = "D0"
+
+    del_item = find_by_attr(catalogue.tree.root_node, del_iid, name="iid")
+    old_space = catalogue.total_space
+
+    logger.info(f"Deleting dir {del_item.getFullPath()}")
+
+    catalogue.deleteByIDs((del_iid,))
+
+    path = del_item.getFullPath()
+    assert os.path.isdir(path) is False
+
+    assert find_by_attr(catalogue.tree.root_node, del_iid, name="iid") is None
+
+    with pytest.raises(ValueError):
+        catalogue.dirs.container.index(del_item)
+
+    # correct dir count / total space?
+    assert catalogue.num_dirs == len(dirs_and_sizes) - 2
+    assert catalogue.total_space == old_space - dirs_and_sizes[path]
+
+    # children removed? ; need to expand recursively
+    for child in del_item.children:
+        if isinstance(child, DirItem):
+            with pytest.raises(ValueError):
+                catalogue.dirs.container.index(child)
+        if isinstance(child, FileItem):
+            with pytest.raises(ValueError):
+                catalogue.files.container.index(child)
+
+    # is the tree correct
+    result_render = renderTreeStr(catalogue.tree.root_node)
+
+    assert result_render == render_del_dir

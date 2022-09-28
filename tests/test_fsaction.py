@@ -1,47 +1,28 @@
-import unittest
 import os
-import shutil
-from utils import (
-    createFSDirTree,
-    renderTreeStr,
-    render_init,
-    render_del_file,
-    render_del_dir,
-)
 
 from hdhog.fsaction import FSActionDelete
 from hdhog.container import DirItem, FileItem
 
 
-class TestFSAction(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
+def testDeleteFile(test_catalogue):
+    dirtree, dirs_sizes, files_sizes = test_catalogue
+    f = list(files_sizes.keys())[0]
+    parent = os.path.dirname(f)
+    fname = os.path.basename(f)
+    item = FileItem("F0", parent, fname)
+    fsa = FSActionDelete()
+    fsa.execute(item)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.dirtree)
-
-    def testDeleteFile(self):
-        f = list(self.files_sizes.keys())[0]
-        parent = os.path.dirname(f)
-        fname = os.path.basename(f)
-        item = FileItem("F0", parent, fname)
-        fsa = FSActionDelete()
-        fsa.execute(item)
-
-        self.assertFalse(os.path.isfile(f))
-
-    def testDeleteDir(self):
-        d = list(self.dirs_sizes.keys())[2]
-        parent = os.path.dirname(d)
-        dname = os.path.basename(d)
-        item = DirItem("D0", parent, dname)
-        fsa = FSActionDelete()
-        fsa.execute(item)
-
-        self.assertFalse(os.path.isdir(d))
+    assert os.path.isfile(f) is False
 
 
-if __name__ == "__main__":
-    unittest.main()
+def testDeleteDir(test_catalogue):
+    dirtree, dirs_sizes, files_sizes = test_catalogue
+    d = list(dirs_sizes.keys())[2]
+    parent = os.path.dirname(d)
+    dname = os.path.basename(d)
+    item = DirItem("D0", parent, dname)
+    fsa = FSActionDelete()
+    fsa.execute(item)
+
+    assert os.path.isdir(d) is False

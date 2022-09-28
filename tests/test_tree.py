@@ -1,4 +1,5 @@
 import shutil
+import pytest
 import unittest
 from anytree.search import find_by_attr
 from utils import (
@@ -42,20 +43,11 @@ def createSimpleTree():
     return node_0, file_container, dir_container
 
 
-class TestTree(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.dirtree, cls.dirs_sizes, cls.files_sizes = createFSDirTree()
+def testCreateManualTree():
+    """Quick check if the dummy tree of ``createSimpleTree()`` looks as intended."""
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.dirtree)
-
-    def testCreateManualTree(self):
-        """ Quick check if dummy tree is correct"""
-
-        root, _, _ = createSimpleTree()
-        true_init_tree = """d0    200000    /bla/d0
+    root, _, _ = createSimpleTree()
+    true_init_tree = """d0    200000    /bla/d0
 ├── f0    100000    /bla/d0/f0
 └── d1    100000    /bla/d0/d1
     ├── f1    50000    /bla/d1/f1
@@ -63,78 +55,78 @@ class TestTree(unittest.TestCase):
         └── f2    50000    /bla/d2/f2
 """
 
-        self.assertEqual(true_init_tree, renderTreeStr(root))
+    assert renderTreeStr(root) == true_init_tree
 
-    def testdeleteFileNode(self):
-        root, file_container, dir_container = createSimpleTree()
-        tree = FSTree(root)
-        del_iid = "f1"
 
-        node = find_by_attr(root, del_iid, name="iid")
-        parent = node.parent
+def testDeleteFileNode():
+    root, file_container, dir_container = createSimpleTree()
+    tree = FSTree(root)
+    del_iid = "f1"
 
-        try:
-            tree.deleteSubtree(node, file_container, dir_container, [])
-        except FileNotFoundError:
-            # exception thrown by file / dir delete
-            # OK, since here only abstract functionality of
-            # the tree is tested
-            pass
+    node = find_by_attr(root, del_iid, name="iid")
+    parent = node.parent
 
-        self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
+    try:
+        tree.deleteSubtree(node, file_container, dir_container, [])
+    except FileNotFoundError:
+        # exception thrown by file / dir delete
+        # OK, since here only abstract functionality of
+        # the tree is tested
+        pass
 
-        with self.assertRaises(ValueError):
-            parent.files.container.index(node)
+    assert find_by_attr(root, del_iid, name="iid") is None
 
-        with self.assertRaises(ValueError):
-            parent.dirs_files.container.index(node)
+    with pytest.raises(ValueError):
+        parent.files.container.index(node)
 
-        true_del_tree = """d0    150000    /bla/d0
+    with pytest.raises(ValueError):
+        parent.dirs_files.container.index(node)
+
+    true_del_tree = """d0    150000    /bla/d0
 ├── f0    100000    /bla/d0/f0
 └── d1    50000    /bla/d0/d1
     └── d2    50000    /bla/d1/d2
         └── f2    50000    /bla/d2/f2
 """
-        self.assertEqual(true_del_tree, renderTreeStr(root))
+    assert renderTreeStr(root) == true_del_tree
 
-    def testdeleteDirNode(self):
-        root, file_container, dir_container = createSimpleTree()
-        tree = FSTree(root)
-        del_iid = "d2"
 
-        node = find_by_attr(root, del_iid, name="iid")
-        parent = node.parent
-        try:
-            tree.deleteSubtree(node, file_container, dir_container, [])
-        except FileNotFoundError:
-            # exception thrown by file / dir delete
-            # OK, since here only abstract functionality of
-            # the tree is tested
-            pass
+def testdeleteDirNode():
+    root, file_container, dir_container = createSimpleTree()
+    tree = FSTree(root)
+    del_iid = "d2"
 
-        self.assertEqual(None, find_by_attr(root, del_iid, name="iid"))
+    node = find_by_attr(root, del_iid, name="iid")
+    parent = node.parent
+    try:
+        tree.deleteSubtree(node, file_container, dir_container, [])
+    except FileNotFoundError:
+        # exception thrown by file / dir delete
+        # OK, since here only abstract functionality of
+        # the tree is tested
+        pass
 
-        with self.assertRaises(ValueError):
-            parent.dirs.container.index(node)
+    assert find_by_attr(root, del_iid, name="iid") is None
 
-        with self.assertRaises(ValueError):
-            parent.dirs_files.container.index(node)
+    with pytest.raises(ValueError):
+        parent.dirs.container.index(node)
 
-        true_del_tree = """d0    150000    /bla/d0
+    with pytest.raises(ValueError):
+        parent.dirs_files.container.index(node)
+
+    true_del_tree = """d0    150000    /bla/d0
 ├── f0    100000    /bla/d0/f0
 └── d1    50000    /bla/d0/d1
     └── f1    50000    /bla/d1/f1
 """
 
-        self.assertEqual(true_del_tree, renderTreeStr(root))
-
-    def testCreateTreeFromFS(self):
-        tree = FSTree()
-        for _, _, in tree.treeFromFSBottomUp(self.dirtree):
-            pass
-
-        self.assertEqual(render_init, renderTreeStr(tree.root_node))
+    assert renderTreeStr(root) == true_del_tree
 
 
-if __name__ == "__main__":
-    unittest.main()
+def testCreateTreeFromFS(test_catalogue):
+    dirtree, dirs_sizes, files_sizes = test_catalogue
+    tree = FSTree()
+    for _, _, in tree.treeFromFSBottomUp(dirtree):
+        pass
+
+    assert renderTreeStr(tree.root_node) == render_init
