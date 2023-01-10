@@ -2,11 +2,12 @@ import os
 import sys
 import json
 from anytree import RenderTree
+from pathlib import Path
 from typing import Tuple, Dict
 
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-sys.path.append(os.path.join(parentdir, "src/hdhog/"))
+currentdir = Path(__file__)
+parentdir = currentdir.parent
+sys.path.append(Path(parentdir, "src/hdhog/"))
 
 from hdhog.container import CatalogueItem
 
@@ -26,23 +27,6 @@ render_init = """dirtree/    55555000    /home/linuser/data/code/HDHog/tests/dir
         └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
             ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
             └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
-"""
-
-render_del_file = """dirtree/    15555000    /home/linuser/data/code/HDHog/tests/dirtree/
-├── dir_1/    15055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
-│   ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
-│   ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
-│   └── dir_2/    10055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
-│       ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
-│       ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
-│       ├── dir_3/    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
-│       │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
-│       └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
-│           ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
-│           └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
-└── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
-    ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
-    └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
 """
 
 
@@ -78,10 +62,17 @@ render_del_dir = """dirtree/    5555000    /home/linuser/data/code/HDHog/tests/d
             └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
 """
 
-with open("dirtree.json") as f:
-    dirtree_json = json.load(f)
+# set paths accordingly if you call pytest in tests dir or via IDE runner in HDHog
+cwd = str(Path.cwd())
+if cwd[-5:] == "HDHog":
+    json_subpath = Path("tests/dirtree.json")
+    root_parent = Path(cwd, "tests")
+if cwd[-5:] == "tests":
+    json_subpath = Path("dirtree.json")
+    root_parent = cwd
 
-root_parent = os.getcwd()
+with open(json_subpath) as f:
+    dirtree_json = json.load(f)
 
 
 def createFSDirTree(
@@ -109,31 +100,31 @@ def createFSDirTree(
         dir_children = subtree["dir_children"]
         file_children = subtree["file_children"]
 
-        this_dir_path = os.path.join(parent_path, dir_dict["dirname"]) + os.path.sep
-        os.mkdir(this_dir_path)
-        dirs_sizes[this_dir_path] = 0
+        this_dir_path = Path(parent_path, dir_dict["dirname"])
+        this_dir_path.mkdir()
+        dirs_sizes[f"{this_dir_path}{os.path.sep}"] = 0
 
         for sub_dict in sorted(dir_children, key=lambda d: d["dirname"]):
 
             recurseCreateItems(this_dir_path, sub_dict)
 
-            subd_path = os.path.join(this_dir_path, sub_dict["dirname"]) + os.path.sep
+            subd_path = f"{Path(this_dir_path, sub_dict['dirname'])}{os.path.sep}"
             subd_size = dirs_sizes[subd_path]
 
-            dirs_sizes[this_dir_path] += subd_size
+            dirs_sizes[f"{this_dir_path}{os.path.sep}"] += subd_size
 
         for fname, size in sorted(file_children.items()):
-            fpath = os.path.join(this_dir_path, fname)
+            fpath = str(Path(this_dir_path, fname))
 
             with open(fpath, "w") as f:
                 f.write("X" * size)
 
             files_sizes[fpath] = size
-            dirs_sizes[this_dir_path] += size
+            dirs_sizes[f"{this_dir_path}{os.path.sep}"] += size
 
     recurseCreateItems(root_parent, dirtree_json)
 
-    dirtree_path = os.path.join(root_parent, dirtree_json["dirname"]) + os.path.sep
+    dirtree_path = str(Path(root_parent, dirtree_json["dirname"]))
     return dirtree_path, dirs_sizes, files_sizes
 
 

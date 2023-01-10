@@ -2,18 +2,22 @@ import os
 from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
 from abc import ABC, abstractclassmethod
+from pathlib import Path
 from typing import List
 
 from .logger import logger
 
 
 class CatalogueContainer:
-    """Holds CatalogueItems (actual objects) and provides sorting thereof.
-    """
+    """Holds CatalogueItems (actual objects) and provides sorting thereof."""
 
     def __init__(self):
         self.container = SortedKeyList(
-            key=lambda item: (-item.size, item.dirpath, item.name,)
+            key=lambda item: (
+                -item.size,
+                item.dirpath,
+                item.name,
+            )
         )
 
     def __len__(self):
@@ -56,7 +60,7 @@ class CatalogueItem(NodeMixin, ABC):
     def __init__(self, iid: str, dirpath: str, name: str):
         super().__init__()
         self.iid = iid
-        self.dirpath = dirpath
+        self.dirpath = f"{Path(dirpath)}{os.path.sep}"
         self.name = name
 
     def __str__(self):
@@ -69,8 +73,9 @@ class CatalogueItem(NodeMixin, ABC):
     def getSize():
         pass
 
+    @abstractclassmethod
     def getFullPath(self) -> str:
-        return os.path.join(self.dirpath, self.name)
+        pass
 
 
 class FileItem(CatalogueItem):
@@ -81,10 +86,13 @@ class FileItem(CatalogueItem):
         self.setFileType(dirpath, name)
 
     def setFileType(self, dirpath: str, name: str):
-        self.type = os.path.splitext(self.name)[1]
+        self.type = Path(self.name).suffix
 
     def getSize(self):
         return self.size
+
+    def getFullPath(self) -> str:
+        return str(Path(self.dirpath, self.name))
 
 
 class DirItem(CatalogueItem):
@@ -144,9 +152,11 @@ class DirItem(CatalogueItem):
         sum_size += sum([child.size for child in self.children])
         return sum_size
 
+    def getFullPath(self) -> str:
+        return f"{Path(self.dirpath, self.name)}{os.path.sep}"
+
     def calcSetDirSize(self):
-        """Calculate size from all direct children and set it.
-        """
+        """Calculate size from all direct children and set it."""
         sum_size = 0
         sum_size += sum([child.size for child in self.children])
         self.size = sum_size

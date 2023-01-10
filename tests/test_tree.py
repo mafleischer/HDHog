@@ -47,11 +47,11 @@ def testCreateManualTree():
     """Quick check if the dummy tree of ``createSimpleTree()`` looks as intended."""
 
     root, _, _ = createSimpleTree()
-    true_init_tree = """d0    200000    /bla/d0
+    true_init_tree = """d0    200000    /bla/d0/
 ├── f0    100000    /bla/d0/f0
-└── d1    100000    /bla/d0/d1
+└── d1    100000    /bla/d0/d1/
     ├── f1    50000    /bla/d1/f1
-    └── d2    50000    /bla/d1/d2
+    └── d2    50000    /bla/d1/d2/
         └── f2    50000    /bla/d2/f2
 """
 
@@ -82,10 +82,10 @@ def testDeleteFileNode():
     with pytest.raises(ValueError):
         parent.dirs_files.container.index(node)
 
-    true_del_tree = """d0    150000    /bla/d0
+    true_del_tree = """d0    150000    /bla/d0/
 ├── f0    100000    /bla/d0/f0
-└── d1    50000    /bla/d0/d1
-    └── d2    50000    /bla/d1/d2
+└── d1    50000    /bla/d0/d1/
+    └── d2    50000    /bla/d1/d2/
         └── f2    50000    /bla/d2/f2
 """
     assert renderTreeStr(root) == true_del_tree
@@ -114,9 +114,9 @@ def testdeleteDirNode():
     with pytest.raises(ValueError):
         parent.dirs_files.container.index(node)
 
-    true_del_tree = """d0    150000    /bla/d0
+    true_del_tree = """d0    150000    /bla/d0/
 ├── f0    100000    /bla/d0/f0
-└── d1    50000    /bla/d0/d1
+└── d1    50000    /bla/d0/d1/
     └── f1    50000    /bla/d1/f1
 """
 

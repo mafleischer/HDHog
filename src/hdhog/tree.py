@@ -1,6 +1,7 @@
 import os
 from anytree.search import find_by_attr
 from abc import ABC, abstractclassmethod
+from pathlib import Path
 from typing import List, Optional
 
 from .container import CatalogueContainer, CatalogueItem, FileItem, DirItem
@@ -81,23 +82,28 @@ class FSTree(Tree):
 
         # do a rstrip, otherwise basename below will be empty
         for parent, dirs, files in os.walk(
-            start.rstrip("/"), topdown=False, followlinks=False, onerror=_raiseWalkError
+            str(start).rstrip("/"),
+            topdown=False,
+            followlinks=False,
+            onerror=_raiseWalkError,
         ):
 
-            # make directories always have a / or \ after name for easy distinction
-            parent_name = f"{os.path.basename(parent)}{os.path.sep}"
-            parent_dirpath = os.path.dirname(parent)
+            # make directories always have a path separator after name for easy distinction
+            parent_name = f"{Path(parent).name}{os.path.sep}"
+            parent_dirpath = f"{Path(parent).parent}{os.path.sep}"
 
             file_children = []
 
             for file in sorted(files):
 
-                if os.path.islink(os.path.join(parent, file)):
-                    logger.debug(f"Skipping link {os.path.join(parent, file)}.")
+                file_path = Path(parent, file)
+
+                if file_path.is_symlink():
+                    logger.debug(f"Skipping link {file_path}.")
                     continue
 
-                fi = FileItem(f"F{self.file_iid}", parent, file)
-                fi.size = os.path.getsize(os.path.join(parent, file))
+                fi = FileItem(f"F{self.file_iid}", f"{parent}{os.path.sep}", file)
+                fi.size = Path(file_path).stat().st_size
 
                 file_children.append(fi)
                 self.file_iid += 1
@@ -116,25 +122,32 @@ class FSTree(Tree):
             else:
                 dir_children = []
                 symlink_dirs = []
+                # TODO: refactor vvv
                 for d in sorted(dirs):
-                    dirpath = os.path.join(parent, d)
+                    dirpath = Path(parent, d)
+                    dirpath_str = str(dirpath)
 
-                    if os.path.islink(dirpath):
-                        symlink_dirs.append(dirpath)
+                    if dirpath.is_symlink():
+                        symlink_dirs.append(dirpath_str)
                         logger.debug(f"Skipping link {dirpath}.")
                         continue
 
-                    dir_children.append(roots[dirpath])
+                    dir_children.append(roots[dirpath_str])
 
                 # the former roots have a parent now, so remove from them from roots
                 for d in dirs:
-                    dirpath = os.path.join(parent, d)
+                    dirpath = f"{Path(parent, d)}"
+                    dirpath_str = str(dirpath)
                     if dirpath not in symlink_dirs:
-                        del roots[dirpath]
+                        del roots[dirpath_str]
 
                 d_iid = f"D{self.dir_iid}"
                 parent_di = DirItem(
-                    d_iid, parent_dirpath, parent_name, file_children, dir_children,
+                    d_iid,
+                    parent_dirpath,
+                    parent_name,
+                    file_children,
+                    dir_children,
                 )
 
                 roots[parent] = parent_di
@@ -219,7 +232,9 @@ class FSTree(Tree):
                 node.parent.dirs.removeItemByValue(node)
 
     def updateAncestors(
-        self, node: CatalogueItem, dir_list: CatalogueContainer,
+        self,
+        node: CatalogueItem,
+        dir_list: CatalogueContainer,
     ):
         """Update sizes of all ancestors of a node that has already been removed
         from parent's structures. Update ancestors in global directory list.
