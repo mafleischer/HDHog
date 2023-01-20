@@ -1,12 +1,9 @@
 import os
 import pytest
-import sys
-import shutil
-import unittest
 from anytree.search import find_by_attr
+from typing import Generator
 
 from utils import (
-    createFSDirTree,
     renderTreeStr,
     render_init,
     render_del_file,
@@ -18,7 +15,7 @@ from hdhog.container import DirItem, FileItem
 from hdhog.logger import logger
 
 
-def testCreateCatalogue(test_catalogue):
+def testCreateCatalogue(test_catalogue: Generator) -> None:
 
     dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
 
@@ -60,7 +57,7 @@ def testCreateCatalogue(test_catalogue):
     assert result_render == render_init
 
 
-def testDeleteFile(test_catalogue):
+def testDeleteFile(test_catalogue: Generator) -> None:
 
     dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
 
@@ -97,7 +94,7 @@ def testDeleteFile(test_catalogue):
     assert result_render == render_del_file
 
 
-def testDeleteDir(test_catalogue):
+def testDeleteDir(test_catalogue: Generator) -> None:
 
     dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
 

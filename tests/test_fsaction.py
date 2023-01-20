@@ -1,10 +1,11 @@
 import os
+from typing import Generator
 
 from hdhog.fsaction import FSActionDelete
 from hdhog.container import DirItem, FileItem
 
 
-def testDeleteFile(test_catalogue):
+def testDeleteFile(test_catalogue: Generator) -> None:
     dirtree, dirs_sizes, files_sizes = test_catalogue
     f = list(files_sizes.keys())[0]
     parent = os.path.dirname(f)
@@ -16,7 +17,7 @@ def testDeleteFile(test_catalogue):
     assert os.path.isfile(f) is False
 
 
-def testDeleteDir(test_catalogue):
+def testDeleteDir(test_catalogue: Generator) -> None:
     dirtree, dirs_sizes, files_sizes = test_catalogue
     d = list(dirs_sizes.keys())[2]
     parent = os.path.dirname(d)

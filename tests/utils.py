@@ -7,7 +7,7 @@ from typing import Tuple, Dict
 
 currentdir = Path(__file__)
 parentdir = currentdir.parent
-sys.path.append(Path(parentdir, "src/hdhog/"))
+sys.path.append(str(Path(parentdir, "src/hdhog/")))
 
 from hdhog.container import CatalogueItem
 
@@ -63,11 +63,11 @@ render_del_dir = """dirtree/    5555000    /home/linuser/data/code/HDHog/tests/d
 """
 
 # set paths accordingly if you call pytest in tests dir or via IDE runner in HDHog
-cwd = str(Path.cwd())
-if cwd[-5:] == "HDHog":
+cwd = Path.cwd()
+if str(cwd)[-5:] == "HDHog":
     json_subpath = Path("tests/dirtree.json")
     root_parent = Path(cwd, "tests")
-if cwd[-5:] == "tests":
+if str(cwd)[-5:] == "tests":
     json_subpath = Path("dirtree.json")
     root_parent = cwd
 
@@ -76,7 +76,7 @@ with open(json_subpath) as f:
 
 
 def createFSDirTree(
-    root_path=root_parent,
+    root_path: Path = root_parent,
 ) -> Tuple[str, Dict[str, int], Dict[str, int]]:
     """Process the JSON for the directory tree recursively
     and create files / directories.
@@ -95,7 +95,7 @@ def createFSDirTree(
     dirs_sizes = {}
     files_sizes = {}
 
-    def recurseCreateItems(parent_path: str, dir_dict: dict):
+    def recurseCreateItems(parent_path: Path, dir_dict: dict) -> None:
         subtree = dir_dict["subtree"]
         dir_children = subtree["dir_children"]
         file_children = subtree["file_children"]

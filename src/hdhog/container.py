@@ -1,17 +1,16 @@
 import os
 from sortedcontainers import SortedKeyList
 from anytree import NodeMixin
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List
-
 from .logger import logger
 
 
 class CatalogueContainer:
     """Holds CatalogueItems (actual objects) and provides sorting thereof."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.container = SortedKeyList(
             key=lambda item: (
                 -item.size,
@@ -20,31 +19,31 @@ class CatalogueContainer:
             )
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.container)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         if self.container:
             return True
         else:
             return False
 
-    def __contains__(self, obj):
+    def __contains__(self, obj: "CatalogueItem") -> bool:
         for item in self.container:
             if item == obj:
                 return True
         return False
 
-    def __iter__(self):
+    def __iter__(self) -> "CatalogueContainer":
         return iter(self.container)
 
-    def __getitem__(self, ix):
+    def __getitem__(self, ix: int) -> "CatalogueItem":
         return self.container[ix]
 
-    def addItem(self, item: "CatalogueItem"):
+    def addItem(self, item: "CatalogueItem") -> None:
         self.container.add(item)
 
-    def removeItemByValue(self, item: "CatalogueItem"):
+    def removeItemByValue(self, item: "CatalogueItem") -> None:
         self.container.remove(item)
 
 
@@ -63,17 +62,17 @@ class CatalogueItem(NodeMixin, ABC):
         self.dirpath = f"{Path(dirpath)}{os.path.sep}"
         self.name = name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.getFullPath()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.getFullPath()
 
-    @abstractclassmethod
-    def getSize():
+    @abstractmethod
+    def getSize(self) -> int:
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def getFullPath(self) -> str:
         pass
 
@@ -85,10 +84,10 @@ class FileItem(CatalogueItem):
         super().__init__(iid, dirpath, name)
         self.setFileType(dirpath, name)
 
-    def setFileType(self, dirpath: str, name: str):
+    def setFileType(self, dirpath: str, name: str) -> None:
         self.type = Path(self.name).suffix
 
-    def getSize(self):
+    def getSize(self) -> int:
         return self.size
 
     def getFullPath(self) -> str:
@@ -129,7 +128,7 @@ class DirItem(CatalogueItem):
 
     def setChildren(
         self, file_children: List[FileItem] = [], dir_children: List["DirItem"] = []
-    ):
+    ) -> None:
         for file_child in file_children:
             file_child.parent = self
             self.files.addItem(file_child)
@@ -147,7 +146,7 @@ class DirItem(CatalogueItem):
 
         self.calcSetDirSize()
 
-    def getSize(self):
+    def getSize(self) -> int:
         sum_size = 0
         sum_size += sum([child.size for child in self.children])
         return sum_size
@@ -155,7 +154,7 @@ class DirItem(CatalogueItem):
     def getFullPath(self) -> str:
         return f"{Path(self.dirpath, self.name)}{os.path.sep}"
 
-    def calcSetDirSize(self):
+    def calcSetDirSize(self) -> int:
         """Calculate size from all direct children and set it."""
         sum_size = 0
         sum_size += sum([child.size for child in self.children])

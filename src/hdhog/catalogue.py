@@ -19,23 +19,23 @@ class Catalogue:
         items.
     """
 
-    def __init__(self, hash_files=False):
+    def __init__(self, hash_files: bool = False):
         # self.filter_checks = []
         # self.files = CatalogueContainer()
         # self.dirs = CatalogueContainer()
         self.tree = FSTree()
         self.files = CatalogueContainer()
         self.dirs = CatalogueContainer()
-        self.mirror_trees = []
+        self.mirror_trees: List[Tree] = []
         self.num_files = 0
         self.num_dirs = 0
         self.total_space = 0
         self.hash_files = hash_files
 
-    def registerMirrorTrees(self, trees: List[Tree]):
+    def registerMirrorTrees(self, trees: List[Tree]) -> None:
         self.mirror_trees.extend(trees)
 
-    def createCatalogue(self, start):
+    def createCatalogue(self, start: str) -> None:
         """Have the directory tree built up as structure and put items into containers.
 
         Args:
@@ -68,7 +68,10 @@ class Catalogue:
         except Exception as e:
             logger.error(f"Error when walking the directory tree: {e}")
 
-        self.total_space = self.tree.root_node.size
+        if self.tree.root_node:
+            self.total_space = self.tree.root_node.size
+        else:
+            self.total_space = 0
 
         logger.info("Finished creating catalogue.")
 
@@ -87,7 +90,7 @@ class Catalogue:
 
     #     self.filter_checks.append(filter_check)
 
-    def deleteByIDs(self, selection: Tuple[str]):
+    def deleteByIDs(self, selection: Tuple[str]) -> None:
         """Executes a files system action on file or directory paths.
 
         Remove the items representing the paths from the respective

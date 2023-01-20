@@ -1,6 +1,6 @@
 import shutil
 import os
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 
 from .container import CatalogueItem
 from .logger import logger
@@ -9,13 +9,13 @@ from .logger import logger
 class FSAction(ABC):
     """Base class for file system actions"""
 
-    @abstractclassmethod
-    def execute(self, catalogue_item: CatalogueItem):
+    @abstractmethod
+    def execute(self, catalogue_item: CatalogueItem) -> None:
         pass
 
 
 class FSActionDelete(FSAction):
-    def execute(self, item: CatalogueItem):
+    def execute(self, item: CatalogueItem) -> None:
         path = item.getFullPath()
         logger.debug(f"Removing {path} from disk.")
         try:

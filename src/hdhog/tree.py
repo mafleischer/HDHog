@@ -1,30 +1,30 @@
 import os
 from anytree.search import find_by_attr
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Generator
 
 from .container import CatalogueContainer, CatalogueItem, FileItem, DirItem
 from .logger import logger
 
 
 class Tree(ABC):
-    @abstractclassmethod
-    def deleteSubtree(self, node: CatalogueItem):
+    @abstractmethod
+    def deleteSubtree(self, node: CatalogueItem) -> None:
         pass
 
-    @abstractclassmethod
-    def updateAncestors(node: CatalogueItem):
+    @abstractmethod
+    def updateAncestors(self, node: CatalogueItem) -> None:
         pass
 
 
 class FSTree(Tree):
-    def __init__(self, root_node: CatalogueItem = None):
+    def __init__(self, root_node: Optional[CatalogueItem] = None):
         self.root_node = root_node
         self.file_iid = 0  # counter for file iids
         self.dir_iid = 0  # counter for dir iids
 
-    def treeFromFSBottomUp(self, start):
+    def treeFromFSBottomUp(self, start: str) -> Generator:
         """Generator that walks the directory tree and builds the tree from the items.
 
         This wraps os.walk() with topdown=False, so it builds the tree bottom up.
@@ -67,7 +67,7 @@ class FSTree(Tree):
 
         roots = {}
 
-        def _raiseWalkError(oserror: OSError):
+        def _raiseWalkError(oserror: OSError) -> None:
             """By default os.walk ignores errors. With this
             function passed as onerror= parameter exceptions are
             raised.
@@ -136,9 +136,9 @@ class FSTree(Tree):
 
                 # the former roots have a parent now, so remove from them from roots
                 for d in dirs:
-                    dirpath = f"{Path(parent, d)}"
+                    dirpath = Path(parent, d)
                     dirpath_str = str(dirpath)
-                    if dirpath not in symlink_dirs:
+                    if dirpath_str not in symlink_dirs:
                         del roots[dirpath_str]
 
                 d_iid = f"D{self.dir_iid}"
@@ -164,7 +164,7 @@ class FSTree(Tree):
         file_list: CatalogueContainer,
         dir_list: CatalogueContainer,
         repeat_trees: List[Tree],
-    ):
+    ) -> None:
         """Recursively delete a tree with a given root <node> and remove the
         root from the global file or directory list.
 
@@ -213,7 +213,7 @@ class FSTree(Tree):
 
         node.parent = None
 
-    def rmNodeFromParent(self, node: CatalogueItem):
+    def rmNodeFromParent(self, node: CatalogueItem) -> None:
         """Remove a node from all of its parent's structures
 
         Args:
@@ -235,7 +235,7 @@ class FSTree(Tree):
         self,
         node: CatalogueItem,
         dir_list: CatalogueContainer,
-    ):
+    ) -> None:
         """Update sizes of all ancestors of a node that has already been removed
         from parent's structures. Update ancestors in global directory list.
 

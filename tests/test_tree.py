@@ -1,20 +1,16 @@
-import shutil
 import pytest
-import unittest
 from anytree.search import find_by_attr
+from typing import Tuple, Generator
 from utils import (
-    createFSDirTree,
     renderTreeStr,
     render_init,
-    render_del_file,
-    render_del_dir,
 )
 
 from hdhog.tree import FSTree
 from hdhog.container import CatalogueContainer, CatalogueItem, DirItem, FileItem
 
 
-def createSimpleTree():
+def createSimpleTree() -> Tuple[CatalogueItem, CatalogueContainer, CatalogueContainer]:
     node_0 = DirItem("d0", "/bla/", "d0")
     node_1 = FileItem("f0", "/bla/d0/", "f0")
     node_1.size = 100000
@@ -43,7 +39,7 @@ def createSimpleTree():
     return node_0, file_container, dir_container
 
 
-def testCreateManualTree():
+def testCreateManualTree() -> None:
     """Quick check if the dummy tree of ``createSimpleTree()`` looks as intended."""
 
     root, _, _ = createSimpleTree()
@@ -58,7 +54,7 @@ def testCreateManualTree():
     assert renderTreeStr(root) == true_init_tree
 
 
-def testDeleteFileNode():
+def testDeleteFileNode() -> None:
     root, file_container, dir_container = createSimpleTree()
     tree = FSTree(root)
     del_iid = "f1"
@@ -91,7 +87,7 @@ def testDeleteFileNode():
     assert renderTreeStr(root) == true_del_tree
 
 
-def testdeleteDirNode():
+def testdeleteDirNode() -> None:
     root, file_container, dir_container = createSimpleTree()
     tree = FSTree(root)
     del_iid = "d2"
@@ -123,10 +119,13 @@ def testdeleteDirNode():
     assert renderTreeStr(root) == true_del_tree
 
 
-def testCreateTreeFromFS(test_catalogue):
+def testCreateTreeFromFS(test_catalogue: Generator) -> None:
     dirtree, dirs_sizes, files_sizes = test_catalogue
     tree = FSTree()
-    for _, _, in tree.treeFromFSBottomUp(dirtree):
+    for (
+        _,
+        _,
+    ) in tree.treeFromFSBottomUp(dirtree):
         pass
 
     assert renderTreeStr(tree.root_node) == render_init

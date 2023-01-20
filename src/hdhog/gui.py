@@ -1,13 +1,14 @@
 import os
-from tkinter import Tk, Button, Entry, Label
+from tkinter import Tk, Button, Entry, Label, Event
 from tkinter.ttk import Treeview, Notebook, Frame, Scrollbar
 from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
 from tkinter import W
 from tkinter import filedialog, messagebox
 from math import log
+from typing import Callable, List
 
 from .catalogue import Catalogue
-from .container import DirItem
+from .container import CatalogueItem, DirItem
 from .tree import Tree
 from .logger import logger
 
@@ -38,14 +39,14 @@ def humanReadableSize(size: int) -> str:
     if loga == 0:
         return f"{size}"
     else:
-        amount_suffix_x = size // (1000 ** loga)
+        amount_suffix_x = size // (1000**loga)
 
         if len(str(amount_suffix_x)) > 1:
             hr_size = f"{amount_suffix_x}{size_suffixes[loga - 1]}"
             logger.debug(f"Human readable size is {hr_size}")
             return hr_size
         else:
-            size_point = size / (1000 ** loga)
+            size_point = size / (1000**loga)
             hr_size = f"{size_point:.1f}{size_suffixes[loga - 1]}"
             logger.debug(f"Human readable size is {hr_size}")
             return hr_size
@@ -53,7 +54,11 @@ def humanReadableSize(size: int) -> str:
 
 class GUITree(Tree, Treeview):
     def __init__(
-        self, parent_widget, columns, xscrollcommand, yscrollcommand,
+        self,
+        parent_widget: Frame,
+        columns: List[str],
+        xscrollcommand: Callable,
+        yscrollcommand: Callable,
     ):
         Treeview.__init__(
             self,
@@ -67,10 +72,10 @@ class GUITree(Tree, Treeview):
         self.tag_configure("file", background=item_colors["file"])
         self.tag_configure("dir", background=item_colors["dir"])
 
-    def deleteSubtree(self, item):
+    def deleteSubtree(self, item: CatalogueItem) -> None:
         self.delete(item.iid)
 
-    def updateAncestors(self, item):
+    def updateAncestors(self, item: CatalogueItem) -> None:
         parent_iid = self.parent(item.iid)
         parent_item = item.parent
         while parent_iid:
@@ -79,7 +84,7 @@ class GUITree(Tree, Treeview):
             parent_iid = self.parent(parent_iid)
             parent_item = item.parent
 
-    def insertDirItem(self, dir_item: DirItem):
+    def insertDirItem(self, dir_item: DirItem) -> None:
         dir_iid = dir_item.iid
         dir_name = dir_item.name
         dir_size = humanReadableSize(dir_item.size)
@@ -94,8 +99,9 @@ class GUITree(Tree, Treeview):
         for child in dir_item.dirs:
             c_iid = child.iid
             c_name = child.name
-            c_size = humanReadableSize(child.size)
-            self.move(c_iid, dir_iid, "end")
+            c_size = humanReadableSize(child.size)  # ?
+            # type ignore: literal 'end' instead of int
+            self.move(c_iid, dir_iid, "end")  # type: ignore
 
         for child in dir_item.files:
             c_iid = child.iid
@@ -114,15 +120,15 @@ class GUITree(Tree, Treeview):
 
 
 class GUI:
-    def __init__(self):
+    def __init__(self) -> None:
 
-        """ ### Data models ### """
+        """### Data models ###"""
         self.catalogue = Catalogue()
 
         """ ### GUI elements ### """
 
         self.root = Tk()
-        self.root.title("Big File Finder - Find biggest files and delete or move them.")
+        self.root.title("HDHog - Find biggest files and delete or move them.")
 
         """ initial position and size """
         sw = self.root.winfo_screenwidth()
@@ -169,7 +175,10 @@ class GUI:
 
         """ Button walk and list directory in folder entry """
         self.button_list = Button(
-            self.frame_right, text="List", width=50, command=self.bntList,
+            self.frame_right,
+            text="List",
+            width=50,
+            command=self.bntList,
         )
         self.button_list.pack(side=TOP)
 
@@ -340,21 +349,21 @@ class GUI:
 
         self.root.bind("<Control-q>", self.ctrlQ)
 
-    def __del__(self):
+    def __del__(self):  # type: ignore
         self.root.quit()
 
-    def run(self):
+    def run(self) -> None:
         self.root.mainloop()
 
-    def ctrlQ(self, event):
+    def ctrlQ(self, event: Event) -> None:
         self.root.quit()
 
-    def btnChooseFolder(self):
+    def btnChooseFolder(self) -> None:
         path = filedialog.askdirectory(parent=self.frame_right, mustexist=True)
         self.startdir_entry.delete(0, END)
         self.startdir_entry.insert(0, path)
 
-    def bntList(self):
+    def bntList(self) -> None:
         startdir = self.startdir_entry.get()
         if not startdir:
             messagebox.showinfo(
@@ -365,6 +374,7 @@ class GUI:
                 title="Invalid Folder", message="Folder does not exist!"
             )
         else:
+            # clear GUI
             gui_root = self.guitree.getRootIID()
             if gui_root:
                 self.guitree.delete(gui_root)
@@ -378,7 +388,7 @@ class GUI:
             self._setDirCountTxt()
             self._setUsedSpace()
 
-    def btnDeleteSelected(self):
+    def btnDeleteSelected(self) -> None:
         tab = self.tabs.tab(self.tabs.select(), "text")
 
         if tab == "Files":
@@ -407,12 +417,12 @@ class GUI:
         self._setDirCountTxt()
         self._setUsedSpace()
 
-    def delFiles(self):
+    def delFiles(self) -> None:
         items = self.tv_files.get_children()
         for iid in items:
             self.tv_files.delete(iid)
 
-    def listFiles(self):
+    def listFiles(self) -> None:
         for item in self.catalogue.files:
             iid = item.iid
             name = item.name
@@ -422,12 +432,12 @@ class GUI:
                 "", END, iid=iid, values=(name, size, parent), tags=["file"]
             )
 
-    def delDirs(self):
+    def delDirs(self) -> None:
         items = self.tv_dirs.get_children()
         for iid in items:
             self.tv_dirs.delete(iid)
 
-    def listDirs(self):
+    def listDirs(self) -> None:
         for item in self.catalogue.dirs:
             iid = item.iid
             name = item.name
@@ -437,12 +447,12 @@ class GUI:
                 "", END, iid=iid, values=(name, size, parent), tags=["dir"]
             )
 
-    def _setFileCountTxt(self):
+    def _setFileCountTxt(self) -> None:
         self.lbl_file_counter.config(text=str(self.catalogue.num_files))
 
-    def _setDirCountTxt(self):
+    def _setDirCountTxt(self) -> None:
         self.lbl_dir_counter.config(text=str(self.catalogue.num_dirs))
 
-    def _setUsedSpace(self):
+    def _setUsedSpace(self) -> None:
         hr_total_size = humanReadableSize(self.catalogue.total_space)
         self.lbl_usedspace.config(text=hr_total_size)

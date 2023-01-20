@@ -1,18 +1,8 @@
-import unittest
-import shutil
-
-from utils import (
-    createFSDirTree,
-    renderTreeStr,
-    render_init,
-    render_del_file,
-    render_del_dir,
-)
-
+from typing import Generator
 from hdhog.gui import GUI, humanReadableSize
 
 
-def testFilesDirsList(test_catalogue):
+def testFilesDirsList(test_catalogue: Generator) -> None:
     dirtree, dirs_sizes, files_sizes = test_catalogue
     gui = GUI()
     gui.startdir_entry.insert(0, dirtree)
@@ -25,7 +15,7 @@ def testFilesDirsList(test_catalogue):
     assert len_dirs == len(dirs_sizes)
 
 
-def testHumanReadableSize(test_catalogue):
+def testHumanReadableSize(test_catalogue: Generator) -> None:
     dirtree, dirs_sizes, files_sizes = test_catalogue
     assert humanReadableSize(0) == str(0)
     assert humanReadableSize(200) == str(200)
