@@ -269,13 +269,13 @@ class FSTree(Tree):
                 grand_parent.dirs_files.removeItemByValue(parent)
                 grand_parent.dirs.removeItemByValue(parent)
 
-                parent.calcSetDirSize()
+                parent.setDirSize()
 
                 grand_parent.dirs.addItem(parent)
                 grand_parent.dirs_files.addItem(parent)
 
             else:
-                parent.calcSetDirSize()
+                parent.setDirSize()
                 logger.debug(f"No grand parent for {node}")
 
             dir_list.addItem(parent)

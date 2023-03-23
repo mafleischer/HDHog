@@ -69,7 +69,7 @@ class CatalogueItem(NodeMixin, ABC):
         return self.getFullPath()
 
     @abstractmethod
-    def getSize(self) -> int:
+    def _getSize(self) -> int:
         pass
 
     @abstractmethod
@@ -87,7 +87,7 @@ class FileItem(CatalogueItem):
     def setFileType(self, dirpath: str, name: str) -> None:
         self.type = Path(self.name).suffix
 
-    def getSize(self) -> int:
+    def _getSize(self) -> int:
         return self.size
 
     def getFullPath(self) -> str:
@@ -144,9 +144,9 @@ class DirItem(CatalogueItem):
         logger.debug(f"File children of {self} are {file_children}.")
         logger.debug(f"Dir children of {self} are {dir_children}.")
 
-        self.calcSetDirSize()
+        self.setDirSize()
 
-    def getSize(self) -> int:
+    def _getSize(self) -> int:
         sum_size = 0
         sum_size += sum([child.size for child in self.children])
         return sum_size
@@ -154,8 +154,6 @@ class DirItem(CatalogueItem):
     def getFullPath(self) -> str:
         return f"{Path(self.dirpath, self.name)}{os.path.sep}"
 
-    def calcSetDirSize(self) -> int:
+    def setDirSize(self) -> None:
         """Calculate size from all direct children and set it."""
-        sum_size = 0
-        sum_size += sum([child.size for child in self.children])
-        self.size = sum_size
+        self.size = self._getSize()
