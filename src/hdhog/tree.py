@@ -182,7 +182,7 @@ class FSTree(Tree):
 
                 logger.debug(f"Removing {file_item} from file list.")
                 try:
-                    file_list.removeItemByValue(file_item)
+                    file_list.removeItem(file_item)
                 except ValueError as ve:
                     logger.error(f"Error removing item from file container: {ve}")
 
@@ -193,14 +193,14 @@ class FSTree(Tree):
 
                 logger.debug(f"Removing {dir_item} from dir list.")
                 try:
-                    dir_list.removeItemByValue(dir_item)
+                    dir_list.removeItem(dir_item)
                 except ValueError as ve:
                     logger.error(f"Error removing item from dir container: {ve}")
 
         if isinstance(node, FileItem):
-            file_list.removeItemByValue(node)
+            file_list.removeItem(node)
         if isinstance(node, DirItem):
-            dir_list.removeItemByValue(node)
+            dir_list.removeItem(node)
 
         self.rmNodeFromParent(node)
         self.updateAncestors(node, dir_list)
@@ -222,12 +222,12 @@ class FSTree(Tree):
             p_children = [ch for ch in node.parent.children if ch != node]
             node.parent.children = tuple(p_children)
 
-            node.parent.dirs_files.removeItemByValue(node)
+            node.parent.dirs_files.removeItem(node)
 
             if isinstance(node, FileItem):
-                node.parent.files.removeItemByValue(node)
+                node.parent.files.removeItem(node)
             if isinstance(node, DirItem):
-                node.parent.dirs.removeItemByValue(node)
+                node.parent.dirs.removeItem(node)
 
     def updateAncestors(
         self,
@@ -256,15 +256,15 @@ class FSTree(Tree):
             )
 
             try:
-                dir_list.removeItemByValue(parent)
+                dir_list.removeItem(parent)
             except ValueError as ve:
                 logger.error(f"Error removing item from dir container: {ve}")
 
             grand_parent = parent.parent
 
             if grand_parent:
-                grand_parent.dirs_files.removeItemByValue(parent)
-                grand_parent.dirs.removeItemByValue(parent)
+                grand_parent.dirs_files.removeItem(parent)
+                grand_parent.dirs.removeItem(parent)
 
                 parent.setDirSize()
 

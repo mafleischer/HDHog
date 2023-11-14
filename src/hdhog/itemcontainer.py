@@ -43,7 +43,7 @@ class ItemContainer:
     def addItem(self, item: "Item") -> None:
         self.itemcontainer.add(item)
 
-    def removeItemByValue(self, item: "Item") -> None:
+    def removeItem(self, item: "Item") -> None:
         self.itemcontainer.remove(item)
 
 
