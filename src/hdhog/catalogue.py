@@ -24,8 +24,8 @@ class Catalogue:
         # self.files = CatalogueContainer()
         # self.dirs = CatalogueContainer()
         self.tree = FSTree()
-        self.files = CatalogueContainer()
-        self.dirs = CatalogueContainer()
+        self.all_files = CatalogueContainer()
+        self.all_dirs = CatalogueContainer()
         self.mirror_trees: List[Tree] = []
         self.num_files = 0
         self.num_dirs = 0
@@ -42,8 +42,9 @@ class Catalogue:
             start (str, optional): Top directory.
         """
 
-        self.files = CatalogueContainer()
-        self.dirs = CatalogueContainer()
+        # currently starts anew with empty structures everytime:
+        self.all_files = CatalogueContainer()
+        self.all_dirs = CatalogueContainer()
         self.tree = FSTree()
         self.num_files = 0
         self.num_dirs = 0
@@ -56,9 +57,9 @@ class Catalogue:
                 self.num_dirs += 1
                 self.num_files += len(file_items)
 
-                self.dirs.addItem(parent_item)
+                self.all_dirs.addItem(parent_item)
                 for item in file_items:
-                    self.files.addItem(item)
+                    self.all_files.addItem(item)
                 for tree in self.mirror_trees:
                     tree.insertDirItem(parent_item)
 
@@ -68,10 +69,7 @@ class Catalogue:
         except Exception as e:
             logger.error(f"Error when walking the directory tree: {e}")
 
-        if self.tree.root_node:
-            self.total_space = self.tree.root_node.size
-        else:
-            self.total_space = 0
+        self.total_space = self.tree.root_node.size
 
         logger.info("Finished creating catalogue.")
 
@@ -114,7 +112,9 @@ class Catalogue:
             item = self.tree.findByID(f"{iid}")
 
             if item:
-                self.tree.deleteSubtree(item, self.files, self.dirs, self.mirror_trees)
+                self.tree.deleteSubtree(
+                    item, self.all_files, self.all_dirs, self.mirror_trees
+                )
 
                 # in case an item has been deleted on disk by the user / os
                 try:
@@ -125,8 +125,8 @@ class Catalogue:
                         f"Cannot delete item since it does not seem to exist anymore: {fne}"
                     )
 
-        self.num_files = len(self.files)
-        self.num_dirs = len(self.dirs) - 1  # minus top dir
+        self.num_files = len(self.all_files)
+        self.num_dirs = len(self.all_dirs) - 1  # minus top dir
         if self.tree.root_node:
             self.total_space = self.tree.root_node.size
         else:

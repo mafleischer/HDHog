@@ -15,20 +15,19 @@ from hdhog.container import DirItem, FileItem
 from hdhog.logger import logger
 
 
-def testCreateCatalogue(test_catalogue: Generator) -> None:
-
-    dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
+def testCreateCatalogue(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_and_sizes, files_and_sizes = create_tree_on_fs
 
     catalogue = Catalogue(hash_files=False)
     catalogue.createCatalogue(start=dirtree)
 
     # all files and dirs in catalogue?
-    assert len(catalogue.files) == len(files_and_sizes)
-    assert len(catalogue.dirs) == len(dirs_and_sizes)
+    assert len(catalogue.all_files) == len(files_and_sizes)
+    assert len(catalogue.all_dirs) == len(dirs_and_sizes)
 
     # quick IDs check
-    file_ids = sorted([item.iid for item in catalogue.files])
-    dir_ids = sorted([item.iid for item in catalogue.dirs])
+    file_ids = sorted([item.iid for item in catalogue.all_files])
+    dir_ids = sorted([item.iid for item in catalogue.all_dirs])
 
     file_ids_expected = sorted([f"F{iid}" for iid in list(range(0, len(file_ids)))])
     assert file_ids == file_ids_expected
@@ -39,13 +38,13 @@ def testCreateCatalogue(test_catalogue: Generator) -> None:
     # sorting by size works?
     files_sorted = sorted(files_and_sizes.items(), key=lambda tup: tup[1], reverse=True)
 
-    for ix, item in enumerate(catalogue.files):
-        assert catalogue.files[ix].getFullPath() == files_sorted[ix][0]
+    for ix, item in enumerate(catalogue.all_files):
+        assert catalogue.all_files[ix].getFullPath() == files_sorted[ix][0]
 
     dirs_sorted = sorted(dirs_and_sizes.items(), key=lambda tup: tup[1], reverse=True)
 
-    for ix, item in enumerate(catalogue.dirs):
-        assert catalogue.dirs[ix].getFullPath() == dirs_sorted[ix][0]
+    for ix, item in enumerate(catalogue.all_dirs):
+        assert catalogue.all_dirs[ix].getFullPath() == dirs_sorted[ix][0]
 
     # correct file / dir count / total space?
     assert catalogue.num_files == len(files_and_sizes)
@@ -57,9 +56,8 @@ def testCreateCatalogue(test_catalogue: Generator) -> None:
     assert result_render == render_init
 
 
-def testDeleteFile(test_catalogue: Generator) -> None:
-
-    dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
+def testDeleteFile(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_and_sizes, files_and_sizes = create_tree_on_fs
 
     catalogue = Catalogue(hash_files=False)
     catalogue.createCatalogue(start=dirtree)
@@ -80,7 +78,7 @@ def testDeleteFile(test_catalogue: Generator) -> None:
     assert find_by_attr(catalogue.tree.root_node, del_iid, name="iid") is None
 
     with pytest.raises(ValueError):
-        catalogue.files.container.index(del_item)
+        catalogue.all_files.container.index(del_item)
 
     # correct file count / total space ?
     assert catalogue.num_files == len(files_and_sizes) - 1
@@ -94,9 +92,8 @@ def testDeleteFile(test_catalogue: Generator) -> None:
     assert result_render == render_del_file
 
 
-def testDeleteDir(test_catalogue: Generator) -> None:
-
-    dirtree, dirs_and_sizes, files_and_sizes = test_catalogue
+def testDeleteDir(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_and_sizes, files_and_sizes = create_tree_on_fs
 
     catalogue = Catalogue(hash_files=False)
     catalogue.createCatalogue(start=dirtree)
@@ -116,7 +113,7 @@ def testDeleteDir(test_catalogue: Generator) -> None:
     assert find_by_attr(catalogue.tree.root_node, del_iid, name="iid") is None
 
     with pytest.raises(ValueError):
-        catalogue.dirs.container.index(del_item)
+        catalogue.all_dirs.container.index(del_item)
 
     # correct dir count / total space?
     assert catalogue.num_dirs == len(dirs_and_sizes) - 2
@@ -126,10 +123,10 @@ def testDeleteDir(test_catalogue: Generator) -> None:
     for child in del_item.children:
         if isinstance(child, DirItem):
             with pytest.raises(ValueError):
-                catalogue.dirs.container.index(child)
+                catalogue.all_dirs.container.index(child)
         if isinstance(child, FileItem):
             with pytest.raises(ValueError):
-                catalogue.files.container.index(child)
+                catalogue.all_files.container.index(child)
 
     # is the tree correct
     result_render = renderTreeStr(catalogue.tree.root_node)

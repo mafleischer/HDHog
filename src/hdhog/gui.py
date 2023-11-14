@@ -121,7 +121,6 @@ class GUITree(Tree, Treeview):
 
 class GUI:
     def __init__(self) -> None:
-
         """### Data models ###"""
         self.catalogue = Catalogue()
 
@@ -423,7 +422,7 @@ class GUI:
             self.tv_files.delete(iid)
 
     def listFiles(self) -> None:
-        for item in self.catalogue.files:
+        for item in self.catalogue.all_files:
             iid = item.iid
             name = item.name
             size = humanReadableSize(item.size)
@@ -438,7 +437,7 @@ class GUI:
             self.tv_dirs.delete(iid)
 
     def listDirs(self) -> None:
-        for item in self.catalogue.dirs:
+        for item in self.catalogue.all_dirs:
             iid = item.iid
             name = item.name
             size = humanReadableSize(item.size)
