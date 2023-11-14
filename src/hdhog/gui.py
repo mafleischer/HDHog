@@ -8,7 +8,7 @@ from math import log
 from typing import Callable, List
 
 from .catalogue import Catalogue
-from .container import CatalogueItem, DirItem
+from .itemcontainer import Item, DirItem
 from .tree import Tree
 from .logger import logger
 
@@ -72,10 +72,10 @@ class GUITree(Tree, Treeview):
         self.tag_configure("file", background=item_colors["file"])
         self.tag_configure("dir", background=item_colors["dir"])
 
-    def deleteSubtree(self, item: CatalogueItem) -> None:
+    def deleteSubtree(self, item: Item) -> None:
         self.delete(item.iid)
 
-    def updateAncestors(self, item: CatalogueItem) -> None:
+    def updateAncestors(self, item: Item) -> None:
         parent_iid = self.parent(item.iid)
         parent_item = item.parent
         while parent_iid:

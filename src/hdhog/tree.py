@@ -4,22 +4,22 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Optional, Generator
 
-from .container import CatalogueContainer, CatalogueItem, FileItem, DirItem
+from .itemcontainer import ItemContainer, Item, FileItem, DirItem
 from .logger import logger
 
 
 class Tree(ABC):
     @abstractmethod
-    def deleteSubtree(self, node: CatalogueItem) -> None:
+    def deleteSubtree(self, node: Item) -> None:
         pass
 
     @abstractmethod
-    def updateAncestors(self, node: CatalogueItem) -> None:
+    def updateAncestors(self, node: Item) -> None:
         pass
 
 
 class FSTree(Tree):
-    def __init__(self, root_node: Optional[CatalogueItem] = None):
+    def __init__(self, root_node: Optional[Item] = None):
         self.root_node = root_node
         self.file_iid = 0  # counter for file iids
         self.dir_iid = 0  # counter for dir iids
@@ -87,7 +87,6 @@ class FSTree(Tree):
             followlinks=False,
             onerror=_raiseWalkError,
         ):
-
             # make directories always have a path separator after name for easy distinction
             parent_name = f"{Path(parent).name}{os.path.sep}"
             parent_dirpath = f"{Path(parent).parent}{os.path.sep}"
@@ -95,7 +94,6 @@ class FSTree(Tree):
             file_children = []
 
             for file in sorted(files):
-
                 file_path = Path(parent, file)
 
                 if file_path.is_symlink():
@@ -160,9 +158,9 @@ class FSTree(Tree):
 
     def deleteSubtree(
         self,
-        node: CatalogueItem,
-        file_list: CatalogueContainer,
-        dir_list: CatalogueContainer,
+        node: Item,
+        file_list: ItemContainer,
+        dir_list: ItemContainer,
         repeat_trees: List[Tree],
     ) -> None:
         """Recursively delete a tree with a given root <node> and remove the
@@ -213,7 +211,7 @@ class FSTree(Tree):
 
         node.parent = None
 
-    def rmNodeFromParent(self, node: CatalogueItem) -> None:
+    def rmNodeFromParent(self, node: Item) -> None:
         """Remove a node from all of its parent's structures
 
         Args:
@@ -233,8 +231,8 @@ class FSTree(Tree):
 
     def updateAncestors(
         self,
-        node: CatalogueItem,
-        dir_list: CatalogueContainer,
+        node: Item,
+        dir_list: ItemContainer,
     ) -> None:
         """Update sizes of all ancestors of a node that has already been removed
         from parent's structures. Update ancestors in global directory list.
@@ -265,7 +263,6 @@ class FSTree(Tree):
             grand_parent = parent.parent
 
             if grand_parent:
-
                 grand_parent.dirs_files.removeItemByValue(parent)
                 grand_parent.dirs.removeItemByValue(parent)
 
@@ -283,7 +280,7 @@ class FSTree(Tree):
             node = parent
             parent = parent.parent
 
-    def findByID(self, iid: str) -> Optional[CatalogueItem]:
+    def findByID(self, iid: str) -> Optional[Item]:
         """Find node by its iid string and return it.
 
         Args:

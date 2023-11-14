@@ -1,7 +1,7 @@
 from typing import Tuple, List
 
 from .tree import Tree, FSTree
-from .container import CatalogueContainer
+from .itemcontainer import ItemContainer
 from .fsaction import FSActionDelete
 from .logger import logger
 
@@ -24,8 +24,8 @@ class Catalogue:
         # self.files = CatalogueContainer()
         # self.dirs = CatalogueContainer()
         self.tree = FSTree()
-        self.all_files = CatalogueContainer()
-        self.all_dirs = CatalogueContainer()
+        self.all_files = ItemContainer()
+        self.all_dirs = ItemContainer()
         self.mirror_trees: List[Tree] = []
         self.num_files = 0
         self.num_dirs = 0
@@ -43,8 +43,8 @@ class Catalogue:
         """
 
         # currently starts anew with empty structures everytime:
-        self.all_files = CatalogueContainer()
-        self.all_dirs = CatalogueContainer()
+        self.all_files = ItemContainer()
+        self.all_dirs = ItemContainer()
         self.tree = FSTree()
         self.num_files = 0
         self.num_dirs = 0

@@ -9,7 +9,7 @@ currentdir = Path(__file__)
 parentdir = currentdir.parent
 sys.path.append(str(Path(parentdir, "src/hdhog/")))
 
-from hdhog.container import CatalogueItem, CatalogueContainer, FileItem, DirItem
+from hdhog.itemcontainer import Item, ItemContainer, FileItem, DirItem
 
 # render strings returned by anytree's render function, for comparison; see function renderTreeStr
 
@@ -77,7 +77,7 @@ with open(json_subpath) as f:
     dirtree_json = json.load(f)
 
 
-def createSimpleTree() -> Tuple[CatalogueItem, CatalogueContainer, CatalogueContainer]:
+def createSimpleTree() -> Tuple[Item, ItemContainer, ItemContainer]:
     """Create raw anytree tree data structure with FileItems and DirItems,
     the global file_container (from the files tab) and dir_container (from the
     dir tab)"""
@@ -99,8 +99,8 @@ def createSimpleTree() -> Tuple[CatalogueItem, CatalogueContainer, CatalogueCont
     node_0.setChildren(file_children=[node_1], dir_children=[node_2])
 
     # containers as in Catalogue.files and Catalogue.dirs
-    file_container = CatalogueContainer()
-    dir_container = CatalogueContainer()
+    file_container = ItemContainer()
+    dir_container = ItemContainer()
 
     for f_item in (node_1, node_3, node_5):
         file_container.addItem(f_item)
@@ -162,7 +162,7 @@ def createFSDirTree(
     return dirtree_path, dirs_sizes, files_sizes
 
 
-def renderTreeStr(root: CatalogueItem) -> str:
+def renderTreeStr(root: Item) -> str:
     """Return a render string of anytree's RenderTree.
 
     Args:

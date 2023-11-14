@@ -7,11 +7,11 @@ from typing import List
 from .logger import logger
 
 
-class CatalogueContainer:
-    """Holds CatalogueItems (actual objects) and provides sorting thereof."""
+class ItemContainer:
+    """Holds Items (actual objects) and provides sorting thereof."""
 
     def __init__(self) -> None:
-        self.container = SortedKeyList(
+        self.itemcontainer = SortedKeyList(
             key=lambda item: (
                 -item.size,
                 item.dirpath,
@@ -20,34 +20,34 @@ class CatalogueContainer:
         )
 
     def __len__(self) -> int:
-        return len(self.container)
+        return len(self.itemcontainer)
 
     def __bool__(self) -> bool:
-        if self.container:
+        if self.itemcontainer:
             return True
         else:
             return False
 
-    def __contains__(self, obj: "CatalogueItem") -> bool:
-        for item in self.container:
+    def __contains__(self, obj: "Item") -> bool:
+        for item in self.itemcontainer:
             if item == obj:
                 return True
         return False
 
-    def __iter__(self) -> "CatalogueContainer":
-        return iter(self.container)
+    def __iter__(self) -> "ItemContainer":
+        return iter(self.itemcontainer)
 
-    def __getitem__(self, ix: int) -> "CatalogueItem":
-        return self.container[ix]
+    def __getitem__(self, ix: int) -> "Item":
+        return self.itemcontainer[ix]
 
-    def addItem(self, item: "CatalogueItem") -> None:
-        self.container.add(item)
+    def addItem(self, item: "Item") -> None:
+        self.itemcontainer.add(item)
 
-    def removeItemByValue(self, item: "CatalogueItem") -> None:
-        self.container.remove(item)
+    def removeItemByValue(self, item: "Item") -> None:
+        self.itemcontainer.remove(item)
 
 
-class CatalogueItem(NodeMixin, ABC):
+class Item(NodeMixin, ABC):
     """This is the AB class for an item held in the catalogue
     container. It's an anytree node as well.
 
@@ -77,7 +77,7 @@ class CatalogueItem(NodeMixin, ABC):
         pass
 
 
-class FileItem(CatalogueItem):
+class FileItem(Item):
     __slots__ = ["type", "hash"]
 
     def __init__(self, iid: str, dirpath: str, name: str, hash_files: bool = False):
@@ -94,9 +94,9 @@ class FileItem(CatalogueItem):
         return str(Path(self.dirpath, self.name))
 
 
-class DirItem(CatalogueItem):
+class DirItem(Item):
     """Holds children as well.
-    It has three CatalogueContainers, two for holding and sorting files and
+    It has three ItemContainers, two for holding and sorting files and
     directories separately, and one for holding and sorting both together.
 
     The size is calculated on creation from all direct children.
@@ -116,9 +116,9 @@ class DirItem(CatalogueItem):
         dir_children: List["DirItem"] = [],
     ):
         super().__init__(iid, dirpath, name)
-        self.files = CatalogueContainer()
-        self.dirs = CatalogueContainer()
-        self.dirs_files = CatalogueContainer()
+        self.files = ItemContainer()
+        self.dirs = ItemContainer()
+        self.dirs_files = ItemContainer()
         self.children = tuple(file_children + dir_children)
         self.size = 0
 

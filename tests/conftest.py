@@ -9,7 +9,7 @@ from utils import (
     render_del_dir,
 )
 from hdhog.tree import FSTree
-from hdhog.container import CatalogueContainer, CatalogueItem, DirItem, FileItem
+from hdhog.itemcontainer import ItemContainer, Item, DirItem, FileItem
 from typing import Generator
 
 

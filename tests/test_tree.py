@@ -8,7 +8,7 @@ from utils import (
 )
 
 from hdhog.tree import FSTree
-from hdhog.container import CatalogueContainer, CatalogueItem, DirItem, FileItem
+from hdhog.itemcontainer import ItemContainer, Item, DirItem, FileItem
 
 
 def testCreateManualTree() -> None:
@@ -45,10 +45,10 @@ def testDeleteFileNode() -> None:
     assert find_by_attr(root, del_iid, name="iid") is None
 
     with pytest.raises(ValueError):
-        parent.files.container.index(node)
+        parent.files.itemcontainer.index(node)
 
     with pytest.raises(ValueError):
-        parent.dirs_files.container.index(node)
+        parent.dirs_files.itemcontainer.index(node)
 
     true_del_tree = """d0    150000    /bla/d0/
 ├── f0    100000    /bla/d0/f0
@@ -77,10 +77,10 @@ def testdeleteDirNode() -> None:
     assert find_by_attr(root, del_iid, name="iid") is None
 
     with pytest.raises(ValueError):
-        parent.dirs.container.index(node)
+        parent.dirs.itemcontainer.index(node)
 
     with pytest.raises(ValueError):
-        parent.dirs_files.container.index(node)
+        parent.dirs_files.itemcontainer.index(node)
 
     true_del_tree = """d0    150000    /bla/d0/
 ├── f0    100000    /bla/d0/f0

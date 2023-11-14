@@ -11,7 +11,7 @@ from utils import (
 )
 
 from hdhog.catalogue import Catalogue
-from hdhog.container import DirItem, FileItem
+from hdhog.itemcontainer import DirItem, FileItem
 from hdhog.logger import logger
 
 
@@ -78,7 +78,7 @@ def testDeleteFile(create_tree_on_fs: Generator) -> None:
     assert find_by_attr(catalogue.tree.root_node, del_iid, name="iid") is None
 
     with pytest.raises(ValueError):
-        catalogue.all_files.container.index(del_item)
+        catalogue.all_files.itemcontainer.index(del_item)
 
     # correct file count / total space ?
     assert catalogue.num_files == len(files_and_sizes) - 1
@@ -113,7 +113,7 @@ def testDeleteDir(create_tree_on_fs: Generator) -> None:
     assert find_by_attr(catalogue.tree.root_node, del_iid, name="iid") is None
 
     with pytest.raises(ValueError):
-        catalogue.all_dirs.container.index(del_item)
+        catalogue.all_dirs.itemcontainer.index(del_item)
 
     # correct dir count / total space?
     assert catalogue.num_dirs == len(dirs_and_sizes) - 2
@@ -123,10 +123,10 @@ def testDeleteDir(create_tree_on_fs: Generator) -> None:
     for child in del_item.children:
         if isinstance(child, DirItem):
             with pytest.raises(ValueError):
-                catalogue.all_dirs.container.index(child)
+                catalogue.all_dirs.itemcontainer.index(child)
         if isinstance(child, FileItem):
             with pytest.raises(ValueError):
-                catalogue.all_files.container.index(child)
+                catalogue.all_files.itemcontainer.index(child)
 
     # is the tree correct
     result_render = renderTreeStr(catalogue.tree.root_node)
