@@ -9,7 +9,9 @@ currentdir = Path(__file__)
 parentdir = currentdir.parent
 sys.path.append(str(Path(parentdir, "src/hdhog/")))
 
-from hdhog.container import CatalogueItem
+from hdhog.container import CatalogueItem, CatalogueContainer, FileItem, DirItem
+
+# render strings returned by anytree's render function, for comparison; see function renderTreeStr
 
 render_init = """dirtree/    55555000    /home/linuser/data/code/HDHog/tests/dirtree/
 ├── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
@@ -75,10 +77,43 @@ with open(json_subpath) as f:
     dirtree_json = json.load(f)
 
 
+def createSimpleTree() -> Tuple[CatalogueItem, CatalogueContainer, CatalogueContainer]:
+    """Create raw anytree tree data structure with FileItems and DirItems,
+    the global file_container (from the files tab) and dir_container (from the
+    dir tab)"""
+
+    node_0 = DirItem("d0", "/bla/", "d0")
+    node_1 = FileItem("f0", "/bla/d0/", "f0")
+    node_1.size = 100000
+
+    node_2 = DirItem("d1", "/bla/d0/", "d1")
+    node_3 = FileItem("f1", "/bla/d1/", "f1")
+    node_3.size = 50000
+
+    node_4 = DirItem("d2", "/bla/d1/", "d2")
+    node_5 = FileItem("f2", "/bla/d2/", "f2")
+    node_5.size = 50000
+
+    node_4.setChildren(file_children=[node_5])
+    node_2.setChildren(file_children=[node_3], dir_children=[node_4])
+    node_0.setChildren(file_children=[node_1], dir_children=[node_2])
+
+    # containers as in Catalogue.files and Catalogue.dirs
+    file_container = CatalogueContainer()
+    dir_container = CatalogueContainer()
+
+    for f_item in (node_1, node_3, node_5):
+        file_container.addItem(f_item)
+    for d_item in (node_0, node_2, node_4):
+        dir_container.addItem(d_item)
+
+    return node_0, file_container, dir_container
+
+
 def createFSDirTree(
     root_path: Path = root_parent,
 ) -> Tuple[str, Dict[str, int], Dict[str, int]]:
-    """Process the JSON for the directory tree recursively
+    """Process the JSON for the test directory tree recursively
     and create files / directories.
 
     Returns two mappings that are referenced in tests.
@@ -105,7 +140,6 @@ def createFSDirTree(
         dirs_sizes[f"{this_dir_path}{os.path.sep}"] = 0
 
         for sub_dict in sorted(dir_children, key=lambda d: d["dirname"]):
-
             recurseCreateItems(this_dir_path, sub_dict)
 
             subd_path = f"{Path(this_dir_path, sub_dict['dirname'])}{os.path.sep}"

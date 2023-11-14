@@ -14,7 +14,7 @@ from typing import Generator
 
 
 @pytest.fixture
-def test_catalogue() -> Generator:
+def create_tree_on_fs() -> Generator:
     dirtree, dirs_and_sizes, files_and_sizes = createFSDirTree()
     yield dirtree, dirs_and_sizes, files_and_sizes
     shutil.rmtree(dirtree)

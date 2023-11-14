@@ -2,8 +2,8 @@ from typing import Generator
 from hdhog.gui import GUI, humanReadableSize
 
 
-def testFilesDirsList(test_catalogue: Generator) -> None:
-    dirtree, dirs_sizes, files_sizes = test_catalogue
+def testFilesDirsList(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_sizes, files_sizes = create_tree_on_fs
     gui = GUI()
     gui.startdir_entry.insert(0, dirtree)
     gui.bntList()
@@ -15,8 +15,8 @@ def testFilesDirsList(test_catalogue: Generator) -> None:
     assert len_dirs == len(dirs_sizes)
 
 
-def testHumanReadableSize(test_catalogue: Generator) -> None:
-    dirtree, dirs_sizes, files_sizes = test_catalogue
+def testHumanReadableSize(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_sizes, files_sizes = create_tree_on_fs
     assert humanReadableSize(0) == str(0)
     assert humanReadableSize(200) == str(200)
     assert humanReadableSize(1100) == "1.1K"

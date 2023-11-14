@@ -5,8 +5,8 @@ from hdhog.fsaction import FSActionDelete
 from hdhog.container import DirItem, FileItem
 
 
-def testDeleteFile(test_catalogue: Generator) -> None:
-    dirtree, dirs_sizes, files_sizes = test_catalogue
+def testDeleteFile(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_sizes, files_sizes = create_tree_on_fs
     f = list(files_sizes.keys())[0]
     parent = os.path.dirname(f)
     fname = os.path.basename(f)
@@ -17,8 +17,8 @@ def testDeleteFile(test_catalogue: Generator) -> None:
     assert os.path.isfile(f) is False
 
 
-def testDeleteDir(test_catalogue: Generator) -> None:
-    dirtree, dirs_sizes, files_sizes = test_catalogue
+def testDeleteDir(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_sizes, files_sizes = create_tree_on_fs
     d = list(dirs_sizes.keys())[2]
     parent = os.path.dirname(d)
     dname = os.path.basename(d)

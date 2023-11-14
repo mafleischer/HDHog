@@ -3,40 +3,12 @@ from anytree.search import find_by_attr
 from typing import Tuple, Generator
 from utils import (
     renderTreeStr,
+    createSimpleTree,
     render_init,
 )
 
 from hdhog.tree import FSTree
 from hdhog.container import CatalogueContainer, CatalogueItem, DirItem, FileItem
-
-
-def createSimpleTree() -> Tuple[CatalogueItem, CatalogueContainer, CatalogueContainer]:
-    node_0 = DirItem("d0", "/bla/", "d0")
-    node_1 = FileItem("f0", "/bla/d0/", "f0")
-    node_1.size = 100000
-
-    node_2 = DirItem("d1", "/bla/d0/", "d1")
-    node_3 = FileItem("f1", "/bla/d1/", "f1")
-    node_3.size = 50000
-
-    node_4 = DirItem("d2", "/bla/d1/", "d2")
-    node_5 = FileItem("f2", "/bla/d2/", "f2")
-    node_5.size = 50000
-
-    node_4.setChildren(file_children=[node_5])
-    node_2.setChildren(file_children=[node_3], dir_children=[node_4])
-    node_0.setChildren(file_children=[node_1], dir_children=[node_2])
-
-    # containers as in Catalogue.files and Catalogue.dirs
-    file_container = CatalogueContainer()
-    dir_container = CatalogueContainer()
-
-    for f_item in (node_1, node_3, node_5):
-        file_container.addItem(f_item)
-    for d_item in (node_0, node_2, node_4):
-        dir_container.addItem(d_item)
-
-    return node_0, file_container, dir_container
 
 
 def testCreateManualTree() -> None:
@@ -119,8 +91,8 @@ def testdeleteDirNode() -> None:
     assert renderTreeStr(root) == true_del_tree
 
 
-def testCreateTreeFromFS(test_catalogue: Generator) -> None:
-    dirtree, dirs_sizes, files_sizes = test_catalogue
+def testCreateTreeFromFS(create_tree_on_fs: Generator) -> None:
+    dirtree, dirs_sizes, files_sizes = create_tree_on_fs
     tree = FSTree()
     for (
         _,
