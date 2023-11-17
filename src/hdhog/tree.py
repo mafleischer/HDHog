@@ -100,8 +100,10 @@ class FSTree(Tree):
                     logger.debug(f"Skipping link {file_path}.")
                     continue
 
-                fi = FileItem(f"F{self.file_iid}", f"{parent}{os.path.sep}", file)
-                fi.size = Path(file_path).stat().st_size
+                file_size = Path(file_path).stat().st_size
+                fi = FileItem(
+                    f"F{self.file_iid}", f"{parent}{os.path.sep}", file, file_size
+                )
 
                 file_children.append(fi)
                 self.file_iid += 1
@@ -202,7 +204,7 @@ class FSTree(Tree):
         if isinstance(node, DirItem):
             dir_list.removeItem(node)
 
-        self.rmNodeFromParent(node)
+        node.rmNodeFromParent()
         self.updateAncestors(node, dir_list)
 
         for tree in repeat_trees:

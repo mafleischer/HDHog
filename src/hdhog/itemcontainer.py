@@ -56,11 +56,12 @@ class Item(NodeMixin, ABC):
 
     __slots__ = ["size", "dirpath", "name"]
 
-    def __init__(self, iid: str, dirpath: str, name: str):
+    def __init__(self, iid: str, dirpath: str, name: str, size: int = 0):
         super().__init__()
         self.iid = iid
         self.dirpath = f"{Path(dirpath)}{os.path.sep}"
         self.name = name
+        self.size = size
 
     def __str__(self) -> str:
         return self.getFullPath()
@@ -76,12 +77,30 @@ class Item(NodeMixin, ABC):
     def getFullPath(self) -> str:
         pass
 
+    def rmNodeFromParent(self) -> None:
+        """Remove this node from all of its parent's structures:
+        as tree child and from the item container
+        """
+        if self.parent:
+            logger.debug(f"Remove node {self} from parent structures.")
+            parent_children = [ch for ch in self.parent.children if ch != self]
+            self.parent.children = tuple(parent_children)
+
+            self.parent.dirs_files.removeItem(self)
+
+            if isinstance(self, FileItem):
+                self.parent.files.removeItem(self)
+            if isinstance(self, DirItem):
+                self.parent.dirs.removeItem(self)
+
 
 class FileItem(Item):
     __slots__ = ["type", "hash"]
 
-    def __init__(self, iid: str, dirpath: str, name: str, hash_files: bool = False):
-        super().__init__(iid, dirpath, name)
+    def __init__(
+        self, iid: str, dirpath: str, name: str, size: int = 0, hash_files: bool = False
+    ):
+        super().__init__(iid, dirpath, name, size)
         self.setFileType(dirpath, name)
 
     def setFileType(self, dirpath: str, name: str) -> None:
@@ -120,7 +139,6 @@ class DirItem(Item):
         self.dirs = ItemContainer()
         self.dirs_files = ItemContainer()
         self.children = tuple(file_children + dir_children)
-        self.size = 0
 
         if file_children or dir_children:
             logger.debug(f"Setting children of {self} on __init__ .")
