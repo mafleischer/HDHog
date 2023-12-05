@@ -1,7 +1,7 @@
 from typing import Tuple, List
 
 from .tree import Tree, FSTree
-from .itemcontainer import ItemContainer
+from .itemcontainer import Item, DirItem, FileItem, ItemContainer
 from .fsaction import FSActionDelete
 from .logger import logger
 
@@ -35,6 +35,13 @@ class Catalogue:
     def registerMirrorTrees(self, trees: List[Tree]) -> None:
         self.mirror_trees.extend(trees)
 
+    def addItem(self, item: Item):
+        if isinstance(item, DirItem):
+            self.all_dirs.addItem(item)
+        if isinstance(item, FileItem):
+            self.all_files.addItem(item)
+
+
     def createCatalogue(self, start: str) -> None:
         """Have the directory tree built up as structure and put items into containers.
 
@@ -57,9 +64,9 @@ class Catalogue:
                 self.num_dirs += 1
                 self.num_files += len(file_items)
 
-                self.all_dirs.addItem(parent_item)
+                self.addItem(parent_item)
                 for item in file_items:
-                    self.all_files.addItem(item)
+                    self.addItem(item)
                 for tree in self.mirror_trees:
                     tree.insertDirItem(parent_item)
 
