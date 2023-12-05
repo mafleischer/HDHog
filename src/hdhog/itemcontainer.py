@@ -46,7 +46,6 @@ class ItemContainer:
     def removeItem(self, item: "Item") -> None:
         self.itemcontainer.remove(item)
 
-
 class Item(NodeMixin, ABC):
     """This is the AB class for an item held in the catalogue
     container. It's an anytree node as well.
@@ -54,7 +53,10 @@ class Item(NodeMixin, ABC):
     size = size in bytes
     """
 
-    __slots__ = ["size", "dirpath", "name"]
+    __slots__ = ["dirpath", "name", "size"]
+    dirpath: str
+    name: str
+    size: int
 
     def __init__(self, iid: str, dirpath: str, name: str, size: int = 0):
         super().__init__()
@@ -71,28 +73,23 @@ class Item(NodeMixin, ABC):
 
     @abstractmethod
     def _getSize(self) -> int:
-        pass
+        raise NotImplementedError("no _getSize method")
 
     @abstractmethod
     def getFullPath(self) -> str:
-        pass
+        raise NotImplementedError("no getFullPath method")
 
     def rmNodeFromParent(self) -> None:
         """Remove this node from all of its parent's structures:
-        as tree child and from the item container
+        as node child and from the item container
         """
         if self.parent:
-            logger.debug(f"Remove node {self} from parent structures.")
-            parent_children = [ch for ch in self.parent.children if ch != self]
-            self.parent.children = tuple(parent_children)
+            logger.debug(f"Remove node {self} from parent's structures.")
+            self.parent.rmChild(self)
 
-            self.parent.dirs_files.removeItem(self)
-
-            if isinstance(self, FileItem):
-                self.parent.files.removeItem(self)
-            if isinstance(self, DirItem):
-                self.parent.dirs.removeItem(self)
-
+    @abstractmethod
+    def rmChild(self, item: "Item"):
+        raise NotImplementedError("no rmChild method")
 
 class FileItem(Item):
     __slots__ = ["type", "hash"]
@@ -111,6 +108,9 @@ class FileItem(Item):
 
     def getFullPath(self) -> str:
         return str(Path(self.dirpath, self.name))
+
+    def rmChild(item: Item):
+        pass
 
 
 class DirItem(Item):
@@ -144,6 +144,11 @@ class DirItem(Item):
             logger.debug(f"Setting children of {self} on __init__ .")
             self.setChildren(file_children, dir_children)
 
+    def _getSize(self) -> int:
+        sum_size = 0
+        sum_size += sum([child.size for child in self.children])
+        return sum_size
+
     def setChildren(
         self, file_children: List[FileItem] = [], dir_children: List["DirItem"] = []
     ) -> None:
@@ -164,10 +169,20 @@ class DirItem(Item):
 
         self.setDirSize()
 
-    def _getSize(self) -> int:
-        sum_size = 0
-        sum_size += sum([child.size for child in self.children])
-        return sum_size
+    def rmChild(self, item: "Item") -> None:
+        """Remove item from all of this node's structures:
+        as node child and from the item container
+        """
+        logger.debug(f"Remove node {item} from structures of {self}.")
+        children = [ch for ch in self.children if ch != item]
+        self.children = tuple(children)
+
+        self.dirs_files.removeItem(item)
+
+        if isinstance(item, FileItem):
+            self.files.removeItem(item)
+        if isinstance(item, DirItem):
+            self.dirs.removeItem(item)
 
     def getFullPath(self) -> str:
         return f"{Path(self.dirpath, self.name)}{os.path.sep}"

@@ -75,7 +75,14 @@ class GUITree(Tree, Treeview):
     def deleteSubtree(self, item: Item) -> None:
         self.delete(item.iid)
 
-    def updateAncestors(self, item: Item) -> None:
+    def _updateAncestors(self, item: Item) -> None:
+        """
+        This refreshes the displayed sizes of all ancestors.
+
+        Since the change happens in the FSTree first this
+        changing of size numbers just reflects it, i.e.
+        `item` is an item whose size has changed.
+        """
         parent_iid = self.parent(item.iid)
         parent_item = item.parent
         while parent_iid:

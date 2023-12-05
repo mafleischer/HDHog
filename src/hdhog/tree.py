@@ -14,7 +14,7 @@ class Tree(ABC):
         pass
 
     @abstractmethod
-    def updateAncestors(self, node: Item) -> None:
+    def _updateAncestors(self, node: Item) -> None:
         pass
 
 
@@ -205,10 +205,9 @@ class FSTree(Tree):
             dir_list.removeItem(node)
 
         node.rmNodeFromParent()
-        self.updateAncestors(node, dir_list)
+        self._updateAncestors(node, dir_list)
 
         for tree in repeat_trees:
-            tree.updateAncestors(node)
             tree.deleteSubtree(node)
 
         node.parent = None
@@ -231,7 +230,7 @@ class FSTree(Tree):
             if isinstance(node, DirItem):
                 node.parent.dirs.removeItem(node)
 
-    def updateAncestors(
+    def _updateAncestors(
         self,
         node: Item,
         dir_list: ItemContainer,
