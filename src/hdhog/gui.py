@@ -7,10 +7,11 @@ from tkinter import filedialog, messagebox
 from math import log
 from typing import Callable, List
 
-from .catalogue import Catalogue
+from .tree import FSTree, Tree
+from .catalogue import Inventory
 from .itemcontainer import Item, DirItem
-from .tree import Tree
 from .logger import logger
+from hdhog import catalogue
 
 item_colors = {"file": "#fcfade", "dir": "#D7F4F3"}  # Cornsilk, Water
 
@@ -72,10 +73,10 @@ class GUITree(Tree, Treeview):
         self.tag_configure("file", background=item_colors["file"])
         self.tag_configure("dir", background=item_colors["dir"])
 
-    def deleteSubtree(self, item: Item) -> None:
-        self.delete(item.iid)
+    def deleteSubtree(self, node: Item) -> None:
+        self.delete(node.iid)
 
-    def _updateAncestors(self, item: Item) -> None:
+    def _updateAncestors(self, node: Item) -> None:
         """
         This refreshes the displayed sizes of all ancestors.
 
@@ -83,17 +84,17 @@ class GUITree(Tree, Treeview):
         changing of size numbers just reflects it, i.e.
         `item` is an item whose size has changed.
         """
-        parent_iid = self.parent(item.iid)
-        parent_item = item.parent
+        parent_iid = self.parent(node.iid)
+        parent_item = node.parent
         while parent_iid:
             new_hr_size = humanReadableSize(parent_item.size)
             self.item(parent_iid, values=(new_hr_size,))
             parent_iid = self.parent(parent_iid)
-            parent_item = item.parent
+            parent_item = node.parent
 
     def insertDirItem(self, dir_item: DirItem) -> None:
         dir_iid = dir_item.iid
-        dir_name = dir_item.name
+        dir_name = dir_item.item_name
         dir_size = humanReadableSize(dir_item.size)
 
         if not self.exists(dir_iid):
@@ -128,10 +129,7 @@ class GUITree(Tree, Treeview):
 
 class GUI:
     def __init__(self) -> None:
-        """### Data models ###"""
-        self.catalogue = Catalogue()
-
-        """ ### GUI elements ### """
+        """### GUI elements ###"""
 
         self.root = Tk()
         self.root.title("HDHog - Find biggest files and delete or move them.")
@@ -333,23 +331,25 @@ class GUI:
         sb_h = Scrollbar(tab_tree, orient="horizontal")
         sb_h.pack(side=BOTTOM, fill="x")
 
-        self.guitree = GUITree(
+        self.gui_tree = GUITree(
             tab_tree,
             columns=["size"],
             xscrollcommand=sb_h.set,
             yscrollcommand=sb_v.set,
         )
 
-        sb_v.config(command=self.guitree.yview)
-        sb_h.config(command=self.guitree.xview)
+        sb_v.config(command=self.gui_tree.yview)
+        sb_h.config(command=self.gui_tree.xview)
 
-        self.tv_tree = self.guitree
-        self.tv_tree.column("size", width=80, minwidth=80, stretch=False)
-        self.tv_tree.heading("size", text="Size")
-        self.tv_tree.pack(expand=1, fill="both")
+        self.gui_tree.column("size", width=80, minwidth=80, stretch=False)
+        self.gui_tree.heading("size", text="Size")
+        self.gui_tree.pack(expand=1, fill="both")
 
-        # important
-        self.catalogue.registerMirrorTrees([self.guitree])
+        """### Data models ###"""
+        self.catalogue = Inventory()
+        self.fs_tree = FSTree(
+            catalogue=self.catalogue, tree_to_replicate_on=self.gui_tree
+        )
 
         """ ### Keybindings ### """
 
@@ -381,9 +381,9 @@ class GUI:
             )
         else:
             # clear GUI
-            gui_root = self.guitree.getRootIID()
+            gui_root = self.gui_tree.getRootIID()
             if gui_root:
-                self.guitree.delete(gui_root)
+                self.gui_tree.delete(gui_root)
             self.catalogue.createCatalogue(start=startdir)
             self.delFiles()
             self.listFiles()
@@ -406,7 +406,7 @@ class GUI:
             for iid in selection:
                 self.tv_dirs.delete(iid)
         else:
-            selection = self.tv_tree.selection()
+            selection = self.gui_tree.selection()
 
         logger.info(f"Deleting selection from tab {tab}.")
 

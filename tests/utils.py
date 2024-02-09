@@ -9,60 +9,9 @@ currentdir = Path(__file__)
 parentdir = currentdir.parent
 sys.path.append(str(Path(parentdir, "src/hdhog/")))
 
-from hdhog.itemcontainer import Item, ItemContainer, FileItem, DirItem
+from hdhog.item import Item, FileItem, DirItem
 
 # render strings returned by anytree's render function, for comparison; see function renderTreeStr
-
-render_init = """dirtree/    55555000    /home/linuser/data/code/HDHog/tests/dirtree/
-├── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
-│   ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
-│   └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
-└── dir_1/    55055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
-    ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
-    ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
-    └── dir_2/    50055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
-        ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
-        ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
-        ├── dir_3/    50000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
-        │   ├── file4.iso    40000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file4.iso
-        │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
-        └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
-            ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
-            └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
-"""
-
-
-render_del_file = """dirtree/    15555000    /home/linuser/data/code/HDHog/tests/dirtree/
-├── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
-│   ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
-│   └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
-└── dir_1/    15055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
-    ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
-    ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
-    └── dir_2/    10055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
-        ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
-        ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
-        ├── dir_3/    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/
-        │   └── file5.mp4    10000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_3/file5.mp4
-        └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
-            ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
-            └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
-"""
-
-render_del_dir = """dirtree/    5555000    /home/linuser/data/code/HDHog/tests/dirtree/
-├── dir_0/    500000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/
-│   ├── file1.txt    400000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file1.txt
-│   └── file2.txt    100000    /home/linuser/data/code/HDHog/tests/dirtree/dir_0/file2.txt
-└── dir_1/    5055000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/
-    ├── file1.pdf    1000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file1.pdf
-    ├── file2.mp3    4000000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/file2.mp3
-    └── dir_2/    55000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/
-        ├── file2.mp3    40000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file2.mp3
-        ├── file3.odt    10000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/file3.odt
-        └── dir_4/    5000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/
-            ├── code100.py    4000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code100.py
-            └── code101.c    1000    /home/linuser/data/code/HDHog/tests/dirtree/dir_1/dir_2/dir_4/code101.c
-"""
 
 # set paths accordingly if you call pytest in tests dir or via IDE runner in HDHog
 cwd = Path.cwd()
@@ -75,39 +24,6 @@ if str(cwd)[-5:] == "tests":
 
 with open(json_subpath) as f:
     dirtree_json = json.load(f)
-
-
-def createSimpleTree() -> Tuple[Item, ItemContainer, ItemContainer]:
-    """Create raw anytree tree data structure with FileItems and DirItems,
-    the global file_container (from the files tab) and dir_container (from the
-    dir tab)"""
-
-    node_0 = DirItem("d0", "/bla/", "d0")
-    node_1 = FileItem("f0", "/bla/d0/", "f0")
-    node_1.size = 100000
-
-    node_2 = DirItem("d1", "/bla/d0/", "d1")
-    node_3 = FileItem("f1", "/bla/d1/", "f1")
-    node_3.size = 50000
-
-    node_4 = DirItem("d2", "/bla/d1/", "d2")
-    node_5 = FileItem("f2", "/bla/d2/", "f2")
-    node_5.size = 50000
-
-    node_4.setChildren(file_children=[node_5])
-    node_2.setChildren(file_children=[node_3], dir_children=[node_4])
-    node_0.setChildren(file_children=[node_1], dir_children=[node_2])
-
-    # containers as in Catalogue.files and Catalogue.dirs
-    file_container = ItemContainer()
-    dir_container = ItemContainer()
-
-    for f_item in (node_1, node_3, node_5):
-        file_container.addItem(f_item)
-    for d_item in (node_0, node_2, node_4):
-        dir_container.addItem(d_item)
-
-    return node_0, file_container, dir_container
 
 
 def createFSDirTree(
@@ -175,5 +91,5 @@ def renderTreeStr(root: Item) -> str:
     in_branch_space = " " * 4
 
     for pre, _, node in RenderTree(root):
-        treestr += f"{pre}{node.name}{in_branch_space}{node.size}{in_branch_space}{node.getFullPath()}\n"
+        treestr += f"{pre}{node.iid}{in_branch_space}{node.item_size}{in_branch_space}{node.item_name}\n"
     return treestr

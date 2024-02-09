@@ -1,30 +1,27 @@
+from collections.abc import Iterable
 import os
-from anytree.search import find_by_attr
 from abc import ABC, abstractmethod
+from types import new_class
+from anytree.search import find_by_attr
 from pathlib import Path
-from typing import List, Optional, Generator
+from typing import List, Sequence, Optional, Generator, Callable
 
-from .itemcontainer import ItemContainer, Item, FileItem, DirItem
+from .item import Item, FileItem, DirItem
+from .factory import createItem
+from .itemupdate import updateItemSize
+from .globalinventory import GlobalInventory
 from .logger import logger
 
 
-class Tree(ABC):
-    @abstractmethod
-    def deleteSubtree(self, node: Item) -> None:
-        pass
-
-    @abstractmethod
-    def _updateAncestors(self, node: Item) -> None:
-        pass
-
-
-class FSTree(Tree):
-    def __init__(self, root_node: Optional[Item] = None):
+class FSTree:
+    def __init__(
+        self,
+        root_node: Optional[Item] = None,
+    ):
         self.root_node = root_node
-        self.file_iid = 0  # counter for file iids
-        self.dir_iid = 0  # counter for dir iids
+        self.global_inventory = GlobalInventory()
 
-    def treeFromFSBottomUp(self, start: str) -> Generator:
+    def createTreeFromFS(self, full_start_path: str) -> None:
         """Generator that walks the directory tree and builds the tree from the items.
 
         This wraps os.walk() with topdown=False, so it builds the tree bottom up.
@@ -42,7 +39,7 @@ class FSTree(Tree):
             If it has no subdirectories create a DirItem for the parent
             directoy with just the files as children and store the
             DirItem as a root. Insert into directory container.
-            This is in "leaf directories", so the algorithm starts with
+            This is in "leaf directories", so the algorithm full_start_paths with
             these as the bottom-most roots.
 
             Else create a DirItem with the subdirectories, which are now not
@@ -56,7 +53,7 @@ class FSTree(Tree):
         Symlinks are skipped.
 
         Args:
-            start (str, optional): Start of the walk..
+            full_start_path (str, optional): full_start_path of the walk..
 
         Raises:
             oserror: when os.walk fails
@@ -81,217 +78,78 @@ class FSTree(Tree):
             raise oserror
 
         # do a rstrip, otherwise basename below will be empty
-        for parent, dirs, files in os.walk(
-            str(start).rstrip("/"),
+        for parent_path, dirs, files in os.walk(
+            str(full_start_path).rstrip("/"),
             topdown=False,
             followlinks=False,
             onerror=_raiseWalkError,
         ):
-            # make directories always have a path separator after name for easy distinction
-            parent_name = f"{Path(parent).name}{os.path.sep}"
-            parent_dirpath = f"{Path(parent).parent}{os.path.sep}"
+            # the string in parent_path are full paths
+            # dirs and files are only the names
+
+            parent_name = Path(parent_path).name
+            grandparent_path = Path(parent_path).parent
+            parent_dir_item = createItem("dir", grandparent_path, parent_name)
 
             file_children = []
 
-            for file in sorted(files):
-                file_path = Path(parent, file)
+            for file_name in sorted(files):
+                file_path = Path(parent_path, file_name)
 
                 if file_path.is_symlink():
                     logger.debug(f"Skipping link {file_path}.")
                     continue
 
-                file_size = Path(file_path).stat().st_size
-                fi = FileItem(
-                    f"F{self.file_iid}", f"{parent}{os.path.sep}", file, file_size
-                )
+                file_item = createItem("file", parent_path, file_name)
+                file_item.setSizeFromFS()
 
-                file_children.append(fi)
-                self.file_iid += 1
+                self.global_inventory.addItem(file_item)
+                file_children.append(file_item)
 
-            # this is in "leaf directories"; no dir children
             if not dirs:
-                d_id = f"D{self.dir_iid}"
-                parent_di = DirItem(
-                    d_id, parent_dirpath, parent_name, file_children, []
-                )
-                roots[parent] = parent_di
-
-                yield (parent_di, file_children)
-
-            # in upper directories subdirectories are roots at first
+                # this is in leaf directories; no dir children
+                self.global_inventory.addItem(parent_dir_item)
+                roots[parent_path] = parent_dir_item
             else:
+                # in upper directories subdirectories were roots in prior iterations
+                # get the objects from roots dict
                 dir_children = []
                 symlink_dirs = []
                 # TODO: refactor vvv
-                for d in sorted(dirs):
-                    dirpath = Path(parent, d)
-                    dirpath_str = str(dirpath)
+                for dir_name in sorted(dirs):
+                    dir_path = Path(parent_path, dir_name)
 
-                    if dirpath.is_symlink():
-                        symlink_dirs.append(dirpath_str)
-                        logger.debug(f"Skipping link {dirpath}.")
+                    if dir_path.is_symlink():
+                        symlink_dirs.append(dir_path)
+                        logger.debug(f"Skipping link {dir_path}.")
                         continue
 
-                    dir_children.append(roots[dirpath_str])
+                    # the former roots have a parent now, so remove from them from roots
+                    del roots[str(dir_path)]
 
-                # the former roots have a parent now, so remove from them from roots
-                for d in dirs:
-                    dirpath = Path(parent, d)
-                    dirpath_str = str(dirpath)
-                    if dirpath_str not in symlink_dirs:
-                        del roots[dirpath_str]
+                    dir_children.append(roots[str(dir_path)])
 
-                d_iid = f"D{self.dir_iid}"
-                parent_di = DirItem(
-                    d_iid,
-                    parent_dirpath,
-                    parent_name,
-                    file_children,
-                    dir_children,
-                )
+                self.global_inventory.addItem(parent_dir_item)
 
-                roots[parent] = parent_di
-
-                yield (parent_di, file_children)
-
-            self.dir_iid += 1
+                roots[parent_path] = parent_dir_item
 
         self.root_node = list(roots.items())[0][1]
 
-    def deleteSubtree(
-        self,
-        node: Item,
-        file_list: ItemContainer,
-        dir_list: ItemContainer,
-        repeat_trees: List[Tree],
-    ) -> None:
-        """Recursively delete a tree with a given root <node> and remove the
-        root from the global file or directory list.
+    def deleteSubtree(self, iid: str) -> None:
+        item = self.global_inventory.removeItem(iid)
+        parent = item.parent
+        item.parent = None
 
-        Repeat the operation on additional trees in list. Currently only used
-        for GUI tree element.
-
-        Args:
-            node (CatalogueItem): a given node
-            file_list (CatalogueContainer): global file list of Catalogue object
-            dir_list (CatalogueContainer): global directory list of Catalogue object
-            repeat_trees (List[Tree]): trees on which the operation is repeated
-        """
-        if node.children:
-            logger.debug(f"Detaching all children of {node}")
-            for file_item in node.files:
-                file_item.parent = None
-
-                logger.debug(f"Removing {file_item} from file list.")
-                try:
-                    file_list.removeItem(file_item)
-                except ValueError as ve:
-                    logger.error(f"Error removing item from file container: {ve}")
-
-            for dir_item in node.dirs:
-                self.deleteSubtree(dir_item, file_list, dir_list, repeat_trees)
-
-                dir_item.parent = None
-
-                logger.debug(f"Removing {dir_item} from dir list.")
-                try:
-                    dir_list.removeItem(dir_item)
-                except ValueError as ve:
-                    logger.error(f"Error removing item from dir container: {ve}")
-
-        if isinstance(node, FileItem):
-            file_list.removeItem(node)
-        if isinstance(node, DirItem):
-            dir_list.removeItem(node)
-
-        node.rmNodeFromParent()
-        self._updateAncestors(node, dir_list)
-
-        for tree in repeat_trees:
-            tree.deleteSubtree(node)
-
-        node.parent = None
-
-    def rmNodeFromParent(self, node: Item) -> None:
-        """Remove a node from all of its parent's structures
-
-        Args:
-            node (CatalogueItem): To-be-remove-node
-        """
-        if node.parent:
-            logger.debug(f"Remove node {node} from parent structures.")
-            p_children = [ch for ch in node.parent.children if ch != node]
-            node.parent.children = tuple(p_children)
-
-            node.parent.dirs_files.removeItem(node)
-
-            if isinstance(node, FileItem):
-                node.parent.files.removeItem(node)
-            if isinstance(node, DirItem):
-                node.parent.dirs.removeItem(node)
-
-    def _updateAncestors(
-        self,
-        node: Item,
-        dir_list: ItemContainer,
-    ) -> None:
-        """Update sizes of all ancestors of a node that has already been removed
-        from parent's structures. Update ancestors in global directory list.
-
-        Since in the underlying sorted list in the container objects references are kept,
-        updating an item takes removing it, then updating the
-        item and then inserting it againg. Updating it when the object
-        is still in the list leads to the reference in the list not
-        representing the new object, so new object cannot be found
-        in the list.
-
-        Args:
-            node (CatalogueItem): removed node
-            dir_list (CatalogueContainer): global directory list
-        """
-        logger.debug(f"Update ancestors of {node}")
-        parent = node.parent
+        # update all ancestors
         while parent:
-            logger.debug(
-                f"Updating size of ancestor {parent}. Current size {parent.size}"
-            )
-
-            try:
-                dir_list.removeItem(parent)
-            except ValueError as ve:
-                logger.error(f"Error removing item from dir container: {ve}")
-
-            grand_parent = parent.parent
-
-            if grand_parent:
-                grand_parent.dirs_files.removeItem(parent)
-                grand_parent.dirs.removeItem(parent)
-
-                parent.setDirSize()
-
-                grand_parent.dirs.addItem(parent)
-                grand_parent.dirs_files.addItem(parent)
-
-            else:
-                parent.setDirSize()
-                logger.debug(f"No grand parent for {node}")
-
-            dir_list.addItem(parent)
-
-            node = parent
+            new_parent_size = parent.item_size - item.item_size
+            updateItemSize(parent, new_parent_size, self.global_inventory)
             parent = parent.parent
 
-    def findByID(self, iid: str) -> Optional[Item]:
-        """Find node by its iid string and return it.
+    def getMinDelItems(iid_list: Sequence[str]):
+        """Of a sequence of to-be-deleted items remove unnecessary items.
 
-        Args:
-            iid (str): iid
-
-        Returns:
-            Optional[CatalogueItem]: item or None
+        Remove items ancestors of which are to be deleted as well.
+        The result is one or several unconnected items. For dirs the whole
+        sub-tree will then be deleted.
         """
-        item = find_by_attr(self.root_node, iid, name="iid")
-        if item:
-            return item
-        else:
-            return None
