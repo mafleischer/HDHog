@@ -2,7 +2,7 @@ import os
 from typing import Generator
 
 from hdhog.fsaction import FSActionDelete
-from hdhog.itemcontainer import DirItem, FileItem
+from hdhog.item import DirItem, FileItem
 
 
 def testDeleteFile(create_tree_on_fs: Generator) -> None:

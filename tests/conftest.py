@@ -1,4 +1,6 @@
 import pytest
+import shutil
+from typing import Generator
 
 from hdhog.factory import createItem
 from hdhog.globalinventory import GlobalInventory
@@ -7,7 +9,8 @@ from hdhog.globalinventory import GlobalInventory
 from hdhog.inventory import Inventory
 from hdhog.item import DirItem, FileItem, Item, addChildToDir
 
-# import shutil
+from utils import createFSDirTree
+
 #
 # from utils import (
 #     createFSDirTree,
@@ -71,9 +74,8 @@ def constructed_tree(global_inventory) -> FSTree:
     return tree
 
 
-#
-# @pytest.fixture
-# def create_tree_on_fs() -> Generator:
-#     dirtree, dirs_and_sizes, files_and_sizes = createFSDirTree()
-#     yield dirtree, dirs_and_sizes, files_and_sizes
-#     shutil.rmtree(dirtree)
+@pytest.fixture
+def create_tree_on_fs(tmp_path) -> Generator:
+    dirtree, dirs_and_sizes, files_and_sizes = createFSDirTree(tmp_path)
+    yield dirtree, dirs_and_sizes, files_and_sizes
+    shutil.rmtree(dirtree)

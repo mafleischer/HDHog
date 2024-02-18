@@ -1,15 +1,16 @@
-from collections.abc import Iterable
 import os
 from abc import ABC, abstractmethod
-from types import new_class
-from anytree.search import find_by_attr
+from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Sequence, Optional, Generator, Callable
+from types import new_class
+from typing import Callable, Dict, Generator, List, Optional, Sequence
 
-from .item import Item, FileItem, DirItem
+from anytree.search import find_by_attr
+
 from .factory import createItem
-from .itemupdate import updateItemSize
 from .globalinventory import GlobalInventory
+from .item import DirItem, FileItem, Item, addChildToDir, setFileSizeFromFS
+from .itemupdate import updateItemSize
 from .logger import logger
 
 
@@ -62,12 +63,10 @@ class FSTree:
             Tuple[DirItem, List[FileItem]]: A parent DirItem and its file children
         """
 
-        roots = {}
-
         def _raiseWalkError(oserror: OSError) -> None:
-            """By default os.walk ignores errors. With this
-            function passed as onerror= parameter exceptions are
-            raised.
+            """Provide error for os.walk below.
+
+            By default os.walk ignores errors.
 
             Args:
                 oserror (OSError): instance
@@ -76,6 +75,8 @@ class FSTree:
                 oserror:
             """
             raise oserror
+
+        current_roots: Dict[Path, DirItem] = {}
 
         # do a rstrip, otherwise basename below will be empty
         for parent_path, dirs, files in os.walk(
@@ -88,10 +89,10 @@ class FSTree:
             # dirs and files are only the names
 
             parent_name = Path(parent_path).name
+
             grandparent_path = Path(parent_path).parent
             parent_dir_item = createItem("dir", grandparent_path, parent_name)
-
-            file_children = []
+            file_sizes_sum = 0
 
             for file_name in sorted(files):
                 file_path = Path(parent_path, file_name)
@@ -101,39 +102,40 @@ class FSTree:
                     continue
 
                 file_item = createItem("file", parent_path, file_name)
-                file_item.setSizeFromFS()
+                setFileSizeFromFS(file_item)
+                file_sizes_sum += file_item.item_size
 
+                addChildToDir(parent_dir_item, file_item)
                 self.global_inventory.addItem(file_item)
-                file_children.append(file_item)
 
-            if not dirs:
-                # this is in leaf directories; no dir children
-                self.global_inventory.addItem(parent_dir_item)
-                roots[parent_path] = parent_dir_item
-            else:
-                # in upper directories subdirectories were roots in prior iterations
-                # get the objects from roots dict
-                dir_children = []
-                symlink_dirs = []
-                # TODO: refactor vvv
-                for dir_name in sorted(dirs):
-                    dir_path = Path(parent_path, dir_name)
+            parent_dir_item.item_size += file_sizes_sum
 
-                    if dir_path.is_symlink():
-                        symlink_dirs.append(dir_path)
-                        logger.debug(f"Skipping link {dir_path}.")
-                        continue
+            symlink_dirs = []
+            for dir_name in sorted(dirs):
+                dir_path = Path(parent_path, dir_name)
 
+                if dir_path.is_symlink():
+                    symlink_dirs.append(dir_path)
+                    logger.debug(f"Skipping link {dir_path}.")
+                    continue
+
+                dir_item = current_roots.get(dir_path)
+
+                if not dir_item:
+                    dir_item = createItem("dir", parent_path, dir_name)
+                    self.global_inventory.addItem(dir_item)
+                else:
                     # the former roots have a parent now, so remove from them from roots
-                    del roots[str(dir_path)]
+                    del current_roots[dir_path]
+                    parent_dir_item.item_size += dir_item.item_size
 
-                    dir_children.append(roots[str(dir_path)])
+                addChildToDir(parent_dir_item, dir_item)
 
-                self.global_inventory.addItem(parent_dir_item)
+            self.global_inventory.addItem(parent_dir_item)
 
-                roots[parent_path] = parent_dir_item
+            current_roots[Path(parent_path)] = parent_dir_item
 
-        self.root_node = list(roots.items())[0][1]
+        self.root_node = list(current_roots.items())[0][1]
 
     def deleteSubtree(self, iid: str) -> None:
         item = self.global_inventory.removeItem(iid)
@@ -146,10 +148,11 @@ class FSTree:
             updateItemSize(parent, new_parent_size, self.global_inventory)
             parent = parent.parent
 
-    def getMinDelItems(iid_list: Sequence[str]):
+    def getMinDelItems(self, iid_list: Sequence[str]):
         """Of a sequence of to-be-deleted items remove unnecessary items.
 
         Remove items ancestors of which are to be deleted as well.
         The result is one or several unconnected items. For dirs the whole
         sub-tree will then be deleted.
         """
+        return 324

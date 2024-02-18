@@ -1,17 +1,27 @@
 import os
-from tkinter import Tk, Button, Entry, Label, Event
-from tkinter.ttk import Treeview, Notebook, Frame, Scrollbar
-from tkinter import RIGHT, LEFT, TOP, BOTTOM, END
-from tkinter import W
-from tkinter import filedialog, messagebox
 from math import log
+from tkinter import (
+    BOTTOM,
+    END,
+    LEFT,
+    RIGHT,
+    TOP,
+    Button,
+    Entry,
+    Event,
+    Label,
+    Tk,
+    W,
+    filedialog,
+    messagebox,
+)
+from tkinter.ttk import Frame, Notebook, Scrollbar, Treeview
 from typing import Callable, List
 
-from .tree import FSTree, Tree
-from .catalogue import Inventory
-from .itemcontainer import Item, DirItem
+from .inventory import Inventory
+from .item import DirItem, Item
 from .logger import logger
-from hdhog import catalogue
+from .tree import FSTree
 
 item_colors = {"file": "#fcfade", "dir": "#D7F4F3"}  # Cornsilk, Water
 
@@ -53,7 +63,7 @@ def humanReadableSize(size: int) -> str:
             return hr_size
 
 
-class GUITree(Tree, Treeview):
+class GUITree(Treeview):
     def __init__(
         self,
         parent_widget: Frame,

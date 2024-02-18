@@ -14,15 +14,15 @@ from .logger import logger
 
 @dataclass(slots=True)
 class Item(NodeMixin, ABC):
-    """This is the AB class for an item held in the catalogue
-    container. It's an anytree node as well.
+    """This is the AB class for an item held in the catalogue container.
 
+    It's an anytree node as well.
     size = size in bytes
     """
 
     _dirpath: str
     _item_name: str
-    item_size: Optional[int] = None
+    item_size: int = 0
     iid: Optional[str] = None
 
     def __repr__(self):
@@ -81,7 +81,7 @@ class DirItem(Item):
         return f"{self._item_name}{os.path.sep}"
 
     def getFullPath(self) -> str:
-        """Helper that returns the full path.
+        """Return the full path.
 
         For dirs with a separator at the end for distinction.
         """

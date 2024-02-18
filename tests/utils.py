@@ -1,15 +1,16 @@
+import json
 import os
 import sys
-import json
-from anytree import RenderTree
 from pathlib import Path
-from typing import Tuple, Dict
+from typing import Dict, Tuple
+
+from anytree import RenderTree
 
 currentdir = Path(__file__)
 parentdir = currentdir.parent
 sys.path.append(str(Path(parentdir, "src/hdhog/")))
 
-from hdhog.item import Item, FileItem, DirItem
+from hdhog.item import DirItem, FileItem, Item
 
 # render strings returned by anytree's render function, for comparison; see function renderTreeStr
 
@@ -27,7 +28,7 @@ with open(json_subpath) as f:
 
 
 def createFSDirTree(
-    root_path: Path = root_parent,
+    root_path: Path,
 ) -> Tuple[str, Dict[str, int], Dict[str, int]]:
     """Process the JSON for the test directory tree recursively
     and create files / directories.
@@ -72,9 +73,9 @@ def createFSDirTree(
             files_sizes[fpath] = size
             dirs_sizes[f"{this_dir_path}{os.path.sep}"] += size
 
-    recurseCreateItems(root_parent, dirtree_json)
+    recurseCreateItems(root_path, dirtree_json)
 
-    dirtree_path = str(Path(root_parent, dirtree_json["dirname"]))
+    dirtree_path = str(Path(root_path, dirtree_json["dirname"]))
     return dirtree_path, dirs_sizes, files_sizes
 
 
